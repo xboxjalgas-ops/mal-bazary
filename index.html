@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Мал Базары — фермерлерге арналған онлайн-нарық</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <div class="headrow">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 15c0-4 3-7 8-7s8 3 8 7-3 5-8 5-8-1-8-5z"/><circle cx="8" cy="10" r="1.4" fill="#fff" stroke="none"/><path d="M6 8L4 6M18 8l2-2"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">Мал Базары</div>
+        <div class="logo-sub">фермерлер нарығы</div>
+      </div>
+    </div>
+    <div class="head-actions" id="headActions">
+      <button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
+      <button class="btn btn-primary" onclick="openModal('postModal')">+ Хабарландыру беру</button>
+    </div>
+  </div>
+  <div class="catbar" id="catbar"></div>
+</header>
+
+<main>
+  <div class="tabs">
+    <div class="tab active" data-tab="animals" onclick="switchTab('animals')">Малдар тізімі</div>
+    <div class="tab" data-tab="products" onclick="switchTab('products')">Мал шаруашылығы өнімдері</div>
+  </div>
+
+  <div id="animalsView">
+    <div class="section-title" id="listCount">Барлық хабарландырулар</div>
+    <div class="list" id="listingsList"></div>
+  </div>
+
+  <div id="productsView" style="display:none;">
+    <div class="prod-group">
+      <h3>Жем</h3>
+      <div class="prod-grid" id="feedGrid"></div>
+    </div>
+    <div class="prod-group">
+      <h3>Дәрі-дәрмек</h3>
+      <div class="prod-grid" id="medGrid"></div>
+    </div>
+    <div class="prod-group">
+      <h3>Тауыққа арналған үйшіктер мен құралдар</h3>
+      <div class="prod-grid" id="coopGrid"></div>
+    </div>
+    <div class="prod-group">
+      <h3>Қолданушылар қосқан өнімдер / құрал-жабдықтар</h3>
+      <div class="prod-grid" id="userProdGrid"></div>
+      <div class="empty-note" id="userProdEmpty">Әзірше қолданушылар ешнәрсе қоспаған. Бірінші болыңыз!</div>
+    </div>
+  </div>
+</main>
+
+<!-- POST MODAL -->
+<div class="overlay" id="postModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 style="font-size:19px;">Хабарландыру беру</h2>
+      <button class="modal-close" onclick="closeModal('postModal')">✕</button>
+    </div>
+
+    <div class="seg" id="postKindSeg">
+      <div class="seg-btn active" data-kind="animal" onclick="setPostKind('animal')">🐄 Мал сату</div>
+      <div class="seg-btn" data-kind="product" onclick="setPostKind('product')">🌾 Өнім/құрал қою</div>
+    </div>
+
+    <div class="upload-box" onclick="alert('Сурет жүктеу батырмасы — демо нұсқада өшірулі тұр.')">📷 Сурет жүктеу үшін басыңыз</div>
+
+    <div id="animalFields">
+      <div class="field" style="margin-top:14px;">
+        <label>Мал түрі</label>
+        <select id="postType">
+          <option>Сиыр</option><option>Қой</option><option>Жылқы</option>
+          <option>Тауық</option><option>Қаз</option><option>Үйрек</option><option>Қоян</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Атауы / қысқаша сипаттама</label>
+        <input id="postTitle" type="text" placeholder="Мыс: Қазақы сиыр, 3 жаста, сауын">
+      </div>
+      <div class="field">
+        <label>Толық описание</label>
+        <textarea id="postDesc" placeholder="Малдың жасы, салмағы, тұқымы, денсаулығы туралы жазыңыз"></textarea>
+      </div>
+      <div class="field">
+        <label>Бағасы (₸)</label>
+        <input id="postPrice" type="number" placeholder="450000">
+      </div>
+      <div class="field">
+        <label>Орналасқан жері</label>
+        <input id="postLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
+      </div>
+    </div>
+
+    <div id="productFields" style="display:none;">
+      <div class="field" style="margin-top:14px;">
+        <label>Санат</label>
+        <select id="prodCat">
+          <option value="tag-good">Жем — сапалы</option>
+          <option value="tag-budget">Жем — қолжетімді</option>
+          <option value="tag-med">Дәрі-дәрмек</option>
+          <option value="tag-coop">Құрал-жабдық / үйшік</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Атауы</label>
+        <input id="prodTitle" type="text" placeholder="Мыс: Витаминді жем қоспасы">
+      </div>
+      <div class="field">
+        <label>Сипаттамасы</label>
+        <textarea id="prodDesc" placeholder="Өнім/құрал туралы қысқаша ақпарат"></textarea>
+      </div>
+      <div class="field">
+        <label>Бағасы</label>
+        <input id="prodPrice" type="text" placeholder="Мыс: 9 500 ₸ / қап">
+      </div>
+      <div class="field">
+        <label>Орналасқан жері</label>
+        <input id="prodLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Телефон нөміріңіз</label>
+      <input id="postPhone" type="tel" inputmode="numeric">
+    </div>
+    <button class="btn btn-primary full-btn" onclick="submitPost()">Жариялау</button>
+  </div>
+</div>
+
+<!-- REGISTER MODAL -->
+<div class="overlay" id="registerModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 style="font-size:19px;">Тіркелу</h2>
+      <button class="modal-close" onclick="closeModal('registerModal')">✕</button>
+    </div>
+
+    <div id="regStep1">
+      <div class="field">
+        <label>Телефон нөміріңіз</label>
+        <input id="regPhone" type="tel" inputmode="numeric">
+      </div>
+      <button class="btn btn-sky full-btn" onclick="sendCode()">SMS-код жіберу</button>
+    </div>
+
+    <div id="regStep2" class="step-hidden">
+      <p class="modal-note" style="margin-bottom:12px;">Нөміріңізге код жіберілді (демо: <b>1234</b>).</p>
+      <div class="field">
+        <label>SMS-код</label>
+        <input id="regCode" type="text" maxlength="4" placeholder="1234">
+      </div>
+      <div class="field">
+        <label>Аты-жөніңіз</label>
+        <input id="regName" type="text" placeholder="Мыс: Асхат Нұрланұлы">
+      </div>
+      <button class="btn btn-primary full-btn" onclick="finishRegister()">Тіркелуді аяқтау</button>
+    </div>
+
+    <p class="modal-note">Тіркелгеніңізде сатушымен тікелей қоңырау арқылы байланысасыз, есіміңіз хабарландыруларда көрсетіледі.</p>
+  </div>
+</div>
+
+<!-- CALL MODAL -->
+<div class="overlay" id="callModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 style="font-size:19px;">Сатушыға қоңырау шалу</h2>
+      <button class="modal-close" onclick="closeModal('callModal')">✕</button>
+    </div>
+    <div class="phone-reveal">
+      <div class="num" id="callNumber">+7 700 000 00 00</div>
+      <div class="seller" id="callSeller">Сатушы: —</div>
+    </div>
+    <a class="btn btn-primary full-btn" id="callLink" href="#" style="text-decoration:none;justify-content:center;">📞 Қазір қоңырау шалу</a>
+    <p class="modal-note">Сатыпалушы мен сатушы арасындағы байланыс тек қоңырау арқылы жүзеге асады — хат-хабар жоқ, тікелей сөйлесесіз.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
