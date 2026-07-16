@@ -1,0 +1,8 @@
+{
+  "name": "mal-bazary",
+  "private": true,
+  "description": "Мал Базары — фермерлерге арналған онлайн-нарық",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  }
+}

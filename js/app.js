@@ -191,10 +191,11 @@ function openModal(id){
     setPostKind('animal');
   }
   if(id==='registerModal'){
+    if(telegramPollTimer){ clearInterval(telegramPollTimer); telegramPollTimer = null; }
+    telegramSessionId = ""; telegramPhone = "";
     document.getElementById('regStep1').classList.remove('step-hidden');
+    document.getElementById('regStepTelegram').classList.add('step-hidden');
     document.getElementById('regStep2').classList.add('step-hidden');
-    resetPhoneField('regPhone');
-    document.getElementById('regCode').value = '';
     document.getElementById('regName').value = '';
   }
   document.getElementById(id).classList.add('show');
@@ -209,23 +210,65 @@ function openCall(idx){
   openModal('callModal');
 }
 
-/* ---------- REGISTER FLOW ---------- */
-let pendingPhone = "";
-function sendCode(){
-  const phone = document.getElementById('regPhone').value.trim();
-  const digitCount = phone.replace(/\D/g,'').length;
-  if(digitCount < 11){ showToast('Телефон нөмірін толық енгізіңіз'); return; }
-  pendingPhone = phone;
-  document.getElementById('regStep1').classList.add('step-hidden');
-  document.getElementById('regStep2').classList.remove('step-hidden');
-  showToast('SMS-код жіберілді (демо: 1234)');
+/* ---------- REGISTER FLOW (Telegram bot арқылы, тегін) ----------
+   Bot атауын mal-bazary Telegram bot жасаған соң осында жаз (README-ді қара) */
+const TELEGRAM_BOT_USERNAME = "mal_bazary_bot";
+
+let telegramSessionId = "";
+let telegramPollTimer = null;
+let telegramPhone = "";
+
+async function startTelegramAuth(){
+  const btn = document.getElementById('tgStartBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Дайындалуда...'; }
+
+  try{
+    const res = await fetch('/.netlify/functions/telegram-start', { method: 'POST' });
+    const data = await res.json();
+    if(!data.ok){ showToast('Қате шықты, қайталап көріңіз'); return; }
+
+    telegramSessionId = data.sessionId;
+    document.getElementById('regStep1').classList.add('step-hidden');
+    document.getElementById('regStepTelegram').classList.remove('step-hidden');
+    document.getElementById('tgOpenLink').href = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${telegramSessionId}`;
+
+    telegramPollTimer = setInterval(pollTelegramStatus, 2500);
+  }catch(err){
+    showToast('Байланыс қатесі, қайталап көріңіз');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = 'Telegram арқылы бастау'; }
+  }
 }
+
+async function pollTelegramStatus(){
+  if(!telegramSessionId) return;
+  try{
+    const res = await fetch(`/.netlify/functions/telegram-check?sessionId=${telegramSessionId}`);
+    const data = await res.json();
+    if(data.ok && data.verified){
+      clearInterval(telegramPollTimer);
+      telegramPollTimer = null;
+      telegramPhone = data.phone;
+      document.getElementById('regStepTelegram').classList.add('step-hidden');
+      document.getElementById('regStep2').classList.remove('step-hidden');
+      document.getElementById('tgVerifiedPhone').textContent = telegramPhone;
+      showToast('Telegram арқылы нөмір расталды!');
+    }
+  }catch(err){ /* тыныш қайталай береміз */ }
+}
+
+function cancelTelegramAuth(){
+  if(telegramPollTimer){ clearInterval(telegramPollTimer); telegramPollTimer = null; }
+  telegramSessionId = "";
+  document.getElementById('regStepTelegram').classList.add('step-hidden');
+  document.getElementById('regStep1').classList.remove('step-hidden');
+}
+
 function finishRegister(){
-  const code = document.getElementById('regCode').value.trim();
   const name = document.getElementById('regName').value.trim();
-  if(code !== "1234"){ showToast('Код қате. Демо код: 1234'); return; }
   if(!name){ showToast('Аты-жөніңізді енгізіңіз'); return; }
-  user = {name, phone: pendingPhone};
+  if(!telegramPhone){ showToast('Алдымен Telegram арқылы нөміріңізді растаңыз'); return; }
+  user = {name, phone: telegramPhone};
   updateHeader();
   closeModal('registerModal');
   showToast('Қош келдіңіз, ' + name + '!');
@@ -278,8 +321,6 @@ function showToast(msg){
 }
 
 /* ---------- INIT ---------- */
-attachPhoneMask(document.getElementById('regPhone'));
 attachPhoneMask(document.getElementById('postPhone'));
-resetPhoneField('regPhone');
 resetPhoneField('postPhone');
 renderCatbar(); renderListings(); renderProducts();
