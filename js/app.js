@@ -191,11 +191,10 @@ function openModal(id){
     setPostKind('animal');
   }
   if(id==='registerModal'){
-    if(telegramPollTimer){ clearInterval(telegramPollTimer); telegramPollTimer = null; }
-    telegramSessionId = ""; telegramPhone = "";
+    telegramPhone = "";
     document.getElementById('regStep1').classList.remove('step-hidden');
-    document.getElementById('regStepTelegram').classList.add('step-hidden');
     document.getElementById('regStep2').classList.add('step-hidden');
+    document.getElementById('tgCodeInput').value = '';
     document.getElementById('regName').value = '';
   }
   document.getElementById(id).classList.add('show');
@@ -210,58 +209,37 @@ function openCall(idx){
   openModal('callModal');
 }
 
-/* ---------- REGISTER FLOW (Telegram bot арқылы, тегін) ----------
-   Bot атауын mal-bazary Telegram bot жасаған соң осында жаз (README-ді қара) */
-const TELEGRAM_BOT_USERNAME = "mal_bazary_bot";
-
-let telegramSessionId = "";
-let telegramPollTimer = null;
+/* ---------- REGISTER FLOW (Telegram bot арқылы, тегін, дерекқорсыз) ---------- */
 let telegramPhone = "";
 
-async function startTelegramAuth(){
-  const btn = document.getElementById('tgStartBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Дайындалуда...'; }
+async function verifyTelegramCode(){
+  const raw = document.getElementById('tgCodeInput').value.trim();
+  if(!raw){ showToast('Telegram-нан алған кодты қойыңыз'); return; }
+
+  const btn = document.getElementById('tgVerifyBtn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Тексерілуде...'; }
 
   try{
-    const res = await fetch('/.netlify/functions/telegram-start', { method: 'POST' });
+    const res = await fetch('/.netlify/functions/telegram-verify', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ token: raw })
+    });
     const data = await res.json();
-    if(!data.ok){ showToast('Қате шықты, қайталап көріңіз'); return; }
-
-    telegramSessionId = data.sessionId;
+    if(!data.ok){
+      showToast(data.message || 'Код қате');
+      return;
+    }
+    telegramPhone = data.phone;
     document.getElementById('regStep1').classList.add('step-hidden');
-    document.getElementById('regStepTelegram').classList.remove('step-hidden');
-    document.getElementById('tgOpenLink').href = `https://t.me/${TELEGRAM_BOT_USERNAME}?start=${telegramSessionId}`;
-
-    telegramPollTimer = setInterval(pollTelegramStatus, 2500);
+    document.getElementById('regStep2').classList.remove('step-hidden');
+    document.getElementById('tgVerifiedPhone').textContent = telegramPhone;
+    showToast('Telegram арқылы нөмір расталды!');
   }catch(err){
     showToast('Байланыс қатесі, қайталап көріңіз');
   }finally{
-    if(btn){ btn.disabled = false; btn.textContent = 'Telegram арқылы бастау'; }
+    if(btn){ btn.disabled = false; btn.textContent = 'Тексеру'; }
   }
-}
-
-async function pollTelegramStatus(){
-  if(!telegramSessionId) return;
-  try{
-    const res = await fetch(`/.netlify/functions/telegram-check?sessionId=${telegramSessionId}`);
-    const data = await res.json();
-    if(data.ok && data.verified){
-      clearInterval(telegramPollTimer);
-      telegramPollTimer = null;
-      telegramPhone = data.phone;
-      document.getElementById('regStepTelegram').classList.add('step-hidden');
-      document.getElementById('regStep2').classList.remove('step-hidden');
-      document.getElementById('tgVerifiedPhone').textContent = telegramPhone;
-      showToast('Telegram арқылы нөмір расталды!');
-    }
-  }catch(err){ /* тыныш қайталай береміз */ }
-}
-
-function cancelTelegramAuth(){
-  if(telegramPollTimer){ clearInterval(telegramPollTimer); telegramPollTimer = null; }
-  telegramSessionId = "";
-  document.getElementById('regStepTelegram').classList.add('step-hidden');
-  document.getElementById('regStep1').classList.remove('step-hidden');
 }
 
 function finishRegister(){
