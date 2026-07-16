@@ -147,19 +147,17 @@
     </div>
 
     <div id="regStep1">
-      <p class="modal-note" style="margin-bottom:14px;">Тіркелу үшін Telegram арқылы нөміріңізді растаңыз — тегін әрі жылдам.</p>
-      <button class="btn btn-sky full-btn" id="tgStartBtn" onclick="startTelegramAuth()">Telegram арқылы бастау</button>
-    </div>
-
-    <div id="regStepTelegram" class="step-hidden">
       <p class="modal-note" style="margin-bottom:14px;">
         1) Төмендегі батырма арқылы Telegram-ды ашыңыз.<br>
-        2) Ашылған бот-та <b>«📱 Нөмірімді бөлісу»</b> батырмасын басыңыз.<br>
-        3) Осы бетке қайта оралыңыз — автоматты түрде танылады.
+        2) Бот-та <b>«📱 Нөмірімді бөлісу»</b> батырмасын басыңыз.<br>
+        3) Бот жіберген кодты көшіріп, төмендегі өріске қойыңыз.
       </p>
-      <a class="btn btn-primary full-btn" id="tgOpenLink" href="#" target="_blank" style="text-decoration:none;justify-content:center;margin-bottom:10px;">Telegram-ды ашу</a>
-      <button class="btn btn-ghost full-btn" onclick="cancelTelegramAuth()">Бас тарту</button>
-      <p class="modal-note" style="text-align:center;">⏳ Растауды күтудеміз...</p>
+      <a class="btn btn-sky full-btn" href="https://t.me/mal_bazary_bot" target="_blank" style="text-decoration:none;justify-content:center;margin-bottom:14px;">Telegram-ды ашу</a>
+      <div class="field">
+        <label>Telegram-нан алған код</label>
+        <textarea id="tgCodeInput" placeholder="Кодты осында қойыңыз" style="min-height:60px;"></textarea>
+      </div>
+      <button class="btn btn-primary full-btn" id="tgVerifyBtn" onclick="verifyTelegramCode()">Тексеру</button>
     </div>
 
     <div id="regStep2" class="step-hidden">
