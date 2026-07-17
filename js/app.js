@@ -67,15 +67,9 @@ const catColors = {
 };
 function iconChip(type){ return `<div style="width:28px;height:28px;color:${catColors[type]}">${icons[type]}</div>`; }
 
-/* ---------- DATA (in-memory only, demo) ---------- */
-let listings = [
-  {type:"Сиыр", title:"Қазақы сиыр, 3 жаста, сауын", desc:"Күніне 12л сүт береді, сау, вакцинасы толық.", price:520000, loc:"Сарыағаш ауданы", seller:"Асхат Н.", phone:"+7 701 234 56 78"},
-  {type:"Қой", title:"Едильбай қошақан, 8 айлық", desc:"Салмағы 45кг, семіз, отбасылық шаруашылықтан.", price:95000, loc:"Түркістан қаласы", seller:"Гүлмира А.", phone:"+7 702 345 67 89"},
-  {type:"Жылқы", title:"Жылқы, 4 жаста, биесі", desc:"Құлын әкелген, момын мінезді, жеккіш емес.", price:650000, loc:"Ордабасы ауданы", seller:"Дархан Т.", phone:"+7 705 111 22 33"},
-  {type:"Тауық", title:"Тауық (20 бас), жұмыртқалы тұқым", desc:"Ломан браун, айына 25-27 жұмыртқа береді.", price:3500, loc:"Шардара ауданы", seller:"Айгүл С.", phone:"+7 707 888 99 00"},
-  {type:"Қаз", title:"Қаз, ересек жұп (аталық+аналық)", desc:"Таза холмогор тұқымы, жасы 1.5 жыл.", price:60000, loc:"Сарыағаш ауданы", seller:"Нұрлан Қ.", phone:"+7 700 555 44 33"},
-  {type:"Қоян", title:"Қоян балалары, 2 айлық (10 бас)", desc:"Калифорния тұқымы, тез өседі, сау.", price:8000, loc:"Түркістан қаласы", seller:"Бекзат М.", phone:"+7 747 222 11 00"}
-];
+/* ---------- DATA (Supabase дерекқорынан жүктеледі) ---------- */
+let listings = [];
+let dataLoaded = false;
 
 const feed = [
   {tag:"tag-good",tagText:"САПАЛЫ",name:"Жоғары сортты пішен-жем қоспасы",desc:"Витаминдер қосылған, ірі қараға арналған, 1 қап 50кг.",price:"18 000 ₸ / қап"},
@@ -92,7 +86,39 @@ const coops = [
   {name:"Ұя-жұмыртқа жинау қобдишасы",desc:"5 бөлмелі, тазалауға ыңғайлы.",price:"14 000 ₸"},
   {name:"Автоматты су беру құралы",desc:"Құстарға арналған, 8л сыйымдылық.",price:"6 500 ₸"}
 ];
-let userProducts = []; // {tag, tagText, name, desc, price, loc, seller}
+let userProducts = []; // Supabase-тен жүктеледі: {tag, tagText, name, desc, price, loc, seller, phone}
+
+function normalizeListing(row){
+  return {
+    type: row.type, title: row.title, desc: row.description || '',
+    price: row.price, loc: row.location, seller: row.seller_name, phone: row.seller_phone
+  };
+}
+function normalizeProduct(row){
+  return {
+    tag: row.category, tagText: tagLabels[row.category] || '', name: row.name,
+    desc: row.description || '', price: row.price, loc: row.location,
+    seller: row.seller_name, phone: row.seller_phone
+  };
+}
+
+async function loadListings(){
+  try{
+    const res = await fetch('/.netlify/functions/get-listings');
+    const data = await res.json();
+    if(data.ok){ listings = data.listings.map(normalizeListing); }
+  }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
+  renderListings();
+}
+
+async function loadUserProducts(){
+  try{
+    const res = await fetch('/.netlify/functions/get-products');
+    const data = await res.json();
+    if(data.ok){ userProducts = data.products.map(normalizeProduct); }
+  }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
+  renderProducts();
+}
 
 let user = null; // {name, phone}
 const cats = ["Барлығы","Сиыр","Қой","Жылқы","Тауық","Қаз","Үйрек","Қоян"];
@@ -260,33 +286,58 @@ function updateHeader(){
   }
 }
 
-/* ---------- POST LISTING (мал немесе өнім) ---------- */
-function submitPost(){
+/* ---------- POST LISTING (мал немесе өнім) — Supabase-ке жазады ---------- */
+async function submitPost(){
   const phone = document.getElementById('postPhone').value.trim();
   if(phone.replace(/\D/g,'').length < 11){ showToast('Телефон нөмірін толық енгізіңіз'); return; }
 
-  if(postKind === 'animal'){
-    const type = document.getElementById('postType').value;
-    const title = document.getElementById('postTitle').value.trim();
-    const desc = document.getElementById('postDesc').value.trim();
-    const price = parseInt(document.getElementById('postPrice').value);
-    const loc = document.getElementById('postLoc').value.trim();
-    if(!title || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
-    listings.unshift({type, title, desc, price, loc, seller: user.name, phone});
-    activeCat = "Барлығы"; renderCatbar(); switchTab('animals'); renderListings();
-    showToast('Хабарландыру жарияланды!');
-  } else {
-    const tag = document.getElementById('prodCat').value;
-    const name = document.getElementById('prodTitle').value.trim();
-    const desc = document.getElementById('prodDesc').value.trim();
-    const price = document.getElementById('prodPrice').value.trim();
-    const loc = document.getElementById('prodLoc').value.trim();
-    if(!name || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
-    userProducts.unshift({tag, tagText: tagLabels[tag], name, desc, price, loc, seller: user.name, phone});
-    switchTab('products'); renderProducts();
-    showToast('Өнім/құрал жарияланды!');
+  const submitBtn = document.querySelector('#postModal .full-btn');
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Жариялануда...'; }
+
+  try{
+    if(postKind === 'animal'){
+      const type = document.getElementById('postType').value;
+      const title = document.getElementById('postTitle').value.trim();
+      const desc = document.getElementById('postDesc').value.trim();
+      const price = parseInt(document.getElementById('postPrice').value);
+      const loc = document.getElementById('postLoc').value.trim();
+      if(!title || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
+
+      const res = await fetch('/.netlify/functions/create-listing', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ type, title, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
+      });
+      const data = await res.json();
+      if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
+
+      activeCat = "Барлығы"; renderCatbar(); switchTab('animals');
+      await loadListings();
+      showToast('Хабарландыру жарияланды!');
+    } else {
+      const tag = document.getElementById('prodCat').value;
+      const name = document.getElementById('prodTitle').value.trim();
+      const desc = document.getElementById('prodDesc').value.trim();
+      const price = document.getElementById('prodPrice').value.trim();
+      const loc = document.getElementById('prodLoc').value.trim();
+      if(!name || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
+
+      const res = await fetch('/.netlify/functions/create-product', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ category: tag, name, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
+      });
+      const data = await res.json();
+      if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
+
+      switchTab('products');
+      await loadUserProducts();
+      showToast('Өнім/құрал жарияланды!');
+    }
+    closeModal('postModal');
+  }catch(err){
+    showToast('Байланыс қатесі, қайталап көріңіз');
+  }finally{
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Жариялау'; }
   }
-  closeModal('postModal');
 }
 
 /* ---------- TOAST ---------- */
@@ -301,4 +352,7 @@ function showToast(msg){
 /* ---------- INIT ---------- */
 attachPhoneMask(document.getElementById('postPhone'));
 resetPhoneField('postPhone');
-renderCatbar(); renderListings(); renderProducts();
+renderCatbar();
+loadListings();
+loadUserProducts();
+renderProducts();
