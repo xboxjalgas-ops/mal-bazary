@@ -133,6 +133,44 @@ Netlify → **Site configuration → Environment variables → Add a variable**:
   `create-product.js`) клиенттен келген деректі (баға, ұзындық, мал түрі,
   телефон форматы) қатаң тексереді, дұрыс болмаса дерекқорға жібермейді.
 
+## Жариялау — Vercel арқылы
+
+Бұл жоба енді **Vercel**-де де жұмыс істейтіндей бейімделген (`netlify/functions/`
+орнына `api/` қалтасы қосылды — Vercel дәл осы қалтаны автоматты таниды).
+
+### 1. Vercel-ге тіркелу және жобаны қосу
+1. **vercel.com** → **"Sign up" → "Continue with GitHub"**.
+2. Дашбордта **"Add New..." → "Project"** бас.
+3. `mal-bazary` репозиторийін тауып, **"Import"** бас.
+4. **Framework Preset**: "Other" (немесе автоматты анықталады) — өзгертпе.
+5. **Build command / Output directory**: бос қалдыр (біз build процесі жоқ таза сайтпыз).
+
+### 2. Құпия айнымалыларды қосу
+"Configure Project" бетінде (немесе кейін **Settings → Environment Variables**)
+мыналарды қос:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `TELEGRAM_BOT_TOKEN`
+- `OTP_SECRET`
+
+(Мәндерін Netlify-де қолданған дәл сол мәндермен толтыр.)
+
+### 3. Deploy
+**"Deploy"** бас. 1-2 минут күт — сайт `https://<жоба-атауы>.vercel.app` дегенде ашылады.
+
+### 4. Telegram webhook-ті жаңа адреске қайта бағыттау
+Браузерде мына сілтемені (жаңа Vercel адресіңмен) бір рет аш:
+```
+https://api.telegram.org/bot<ТОКЕНІҢІЗ>/setWebhook?url=https://<жоба-атауы>.vercel.app/api/telegram-webhook
+```
+`{"ok":true}` шықса — дайын.
+
+### Netlify мен Vercel арасындағы айырмашылық (өз біліміне)
+- Netlify: функциялар `netlify/functions/*.js`, `exports.handler = async (event) => {...}`.
+- Vercel: функциялар `api/*.js`, `module.exports = async (req, res) => {...}`.
+- Екеуі де осы репозиторийде қатар тұр — қай платформаны қолдансаң да жұмыс істейді
+  (Netlify нұсқасы `netlify/functions/`, Vercel нұсқасы `api/`).
+
 ## ⚠️ Ескерту: тіркелу (аты-жөн) әлі сессия ішінде ғана
 
 `listings` мен `products` кестелері Supabase-те **шынымен сақталады** —

@@ -104,7 +104,7 @@ function normalizeProduct(row){
 
 async function loadListings(){
   try{
-    const res = await fetch('/.netlify/functions/get-listings');
+    const res = await fetch('/api/get-listings');
     const data = await res.json();
     if(data.ok){ listings = data.listings.map(normalizeListing); }
   }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
@@ -113,7 +113,7 @@ async function loadListings(){
 
 async function loadUserProducts(){
   try{
-    const res = await fetch('/.netlify/functions/get-products');
+    const res = await fetch('/api/get-products');
     const data = await res.json();
     if(data.ok){ userProducts = data.products.map(normalizeProduct); }
   }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
@@ -246,7 +246,7 @@ async function verifyTelegramCode(){
   if(btn){ btn.disabled = true; btn.textContent = 'Тексерілуде...'; }
 
   try{
-    const res = await fetch('/.netlify/functions/telegram-verify', {
+    const res = await fetch('/api/telegram-verify', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ token: raw })
@@ -303,7 +303,7 @@ async function submitPost(){
       const loc = document.getElementById('postLoc').value.trim();
       if(!title || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
-      const res = await fetch('/.netlify/functions/create-listing', {
+      const res = await fetch('/api/create-listing', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ type, title, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
       });
@@ -321,7 +321,7 @@ async function submitPost(){
       const loc = document.getElementById('prodLoc').value.trim();
       if(!name || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
-      const res = await fetch('/.netlify/functions/create-product', {
+      const res = await fetch('/api/create-product', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ category: tag, name, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
       });
