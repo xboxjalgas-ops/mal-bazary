@@ -6,6 +6,19 @@
 
 create extension if not exists pgcrypto;
 
+-- Тіркелген қолданушылар (телефон + аты-жөн)
+create table if not exists users (
+  id uuid primary key default gen_random_uuid(),
+  phone text unique not null,
+  name text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table users enable row level security;
+-- Назар аударыңыз: users кестесіне ешбір public policy жасалмады —
+-- демек RLS оны толығымен жабады. Тек Netlify/Vercel функциялары
+-- (service_role кілтімен) оқи/жаза алады.
+
 -- Мал/хабарландыру кестесі
 create table if not exists listings (
   id uuid primary key default gen_random_uuid(),

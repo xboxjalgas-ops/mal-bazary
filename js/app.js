@@ -237,6 +237,7 @@ function openCall(idx){
 
 /* ---------- REGISTER FLOW (Telegram bot арқылы, тегін, дерекқорсыз) ---------- */
 let telegramPhone = "";
+const SESSION_KEY = "mb_session";
 
 async function verifyTelegramCode(){
   const raw = document.getElementById('tgCodeInput').value.trim();
@@ -257,10 +258,21 @@ async function verifyTelegramCode(){
       return;
     }
     telegramPhone = data.phone;
-    document.getElementById('regStep1').classList.add('step-hidden');
-    document.getElementById('regStep2').classList.remove('step-hidden');
-    document.getElementById('tgVerifiedPhone').textContent = telegramPhone;
-    showToast('Telegram арқылы нөмір расталды!');
+
+    // Бұл нөмір бұрын тіркелген бе, тексереміз — солай болса, аты-жөнін
+    // қайта сұрамай-ақ, бірден тіркелуді аяқтаймыз.
+    const userRes = await fetch(`/api/get-user?phone=${encodeURIComponent(telegramPhone)}`);
+    const userData = await userRes.json();
+
+    if(userData.ok && userData.exists){
+      await completeLogin(telegramPhone, userData.name);
+      showToast('Қайта келуіңізбен, ' + userData.name + '!');
+    } else {
+      document.getElementById('regStep1').classList.add('step-hidden');
+      document.getElementById('regStep2').classList.remove('step-hidden');
+      document.getElementById('tgVerifiedPhone').textContent = telegramPhone;
+      showToast('Telegram арқылы нөмір расталды!');
+    }
   }catch(err){
     showToast('Байланыс қатесі, қайталап көріңіз');
   }finally{
@@ -268,20 +280,79 @@ async function verifyTelegramCode(){
   }
 }
 
-function finishRegister(){
+async function finishRegister(){
   const name = document.getElementById('regName').value.trim();
   if(!name){ showToast('Аты-жөніңізді енгізіңіз'); return; }
   if(!telegramPhone){ showToast('Алдымен Telegram арқылы нөміріңізді растаңыз'); return; }
-  user = {name, phone: telegramPhone};
+
+  try{
+    const res = await fetch('/api/create-user', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone: telegramPhone, name })
+    });
+    const data = await res.json();
+    if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
+
+    await completeLogin(telegramPhone, data.name);
+    showToast('Қош келдіңіз, ' + data.name + '!');
+  }catch(err){
+    showToast('Байланыс қатесі, қайталап көріңіз');
+  }
+}
+
+// Тіркелу/кіру сәтті болған соң: user күйін орнатып, ұзақ мерзімді
+// сессия токенін алып, localStorage-ке сақтайды (келесі жолы Telegram
+// арқылы қайта растаудың қажеті болмайды).
+async function completeLogin(phone, name){
+  user = { name, phone };
   updateHeader();
   closeModal('registerModal');
-  showToast('Қош келдіңіз, ' + name + '!');
+
+  try{
+    const res = await fetch('/api/create-session', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    if(data.ok){ localStorage.setItem(SESSION_KEY, data.token); }
+  }catch(err){ /* сессия сақталмаса да, ағымдағы кіру жұмыс істей береді */ }
 }
+
+// Бет ашылғанда: localStorage-те сақталған сессия бар ма, тексереді.
+async function restoreSession(){
+  const token = localStorage.getItem(SESSION_KEY);
+  if(!token) return;
+  try{
+    const res = await fetch('/api/verify-session', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token })
+    });
+    const data = await res.json();
+    if(!data.ok){ localStorage.removeItem(SESSION_KEY); return; }
+
+    const userRes = await fetch(`/api/get-user?phone=${encodeURIComponent(data.phone)}`);
+    const userData = await userRes.json();
+    if(userData.ok && userData.exists){
+      user = { name: userData.name, phone: data.phone };
+      updateHeader();
+    }
+  }catch(err){ /* тыныш, қалыпты (тіркелмеген) күймен жалғастырамыз */ }
+}
+
+function logout(){
+  user = null;
+  localStorage.removeItem(SESSION_KEY);
+  const el = document.getElementById('headActions');
+  el.innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
+    <button class="btn btn-primary" onclick="openModal('postModal')">+ Хабарландыру беру</button>`;
+  showToast('Шықтыңыз');
+}
+
 function updateHeader(){
   const el = document.getElementById('headActions');
   if(user){
     const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-    el.innerHTML = `<div class="user-chip"><div class="avatar">${escapeHTML(initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div>
+    el.innerHTML = `<div class="user-chip" style="cursor:pointer;" onclick="logout()" title="Шығу"><div class="avatar">${escapeHTML(initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div>
       <button class="btn btn-primary" onclick="openModal('postModal')">+ Хабарландыру беру</button>`;
   }
 }
@@ -356,3 +427,4 @@ renderCatbar();
 loadListings();
 loadUserProducts();
 renderProducts();
+restoreSession();
