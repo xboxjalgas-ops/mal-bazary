@@ -8,8 +8,8 @@
 
 ```
 mal-bazary/
-├── index.html                       — негізгі бет
-├── market.html                      — index.html-мен бірдей (болашақ landing үшін)
+├── index.html                       — таныстыру (landing) беті, бірінші кіретін бет
+├── market.html                      — нақты нарық (хабарландырулар, тіркелу, дерекқор)
 ├── css/style.css                    — дизайн, түстер, орналасу
 ├── js/app.js                        — тіркелу, хабарландыру беру, фильтр, қоңырау логикасы
 ├── netlify/functions/telegram-webhook.js — Telegram-нан хабар қабылдап, код жібереді

@@ -344,7 +344,7 @@ function logout(){
   localStorage.removeItem(SESSION_KEY);
   const el = document.getElementById('headActions');
   el.innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
-    <button class="btn btn-primary" onclick="openModal('postModal')">+ Хабарландыру беру</button>`;
+    <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   showToast('Шықтыңыз');
 }
 
@@ -353,7 +353,7 @@ function updateHeader(){
   if(user){
     const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
     el.innerHTML = `<div class="user-chip" style="cursor:pointer;" onclick="logout()" title="Шығу"><div class="avatar">${escapeHTML(initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div>
-      <button class="btn btn-primary" onclick="openModal('postModal')">+ Хабарландыру беру</button>`;
+      <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   }
 }
 

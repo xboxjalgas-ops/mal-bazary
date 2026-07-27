@@ -107,3 +107,13 @@ footer{border-top:2px solid var(--border);padding:28px 20px;}
   .steps{grid-template-columns:1fr;gap:24px;}
   .landing-nav{display:none;}
 }
+
+@media (max-width:480px){
+  .cat-strip{gap:8px;padding:18px 14px;}
+  .cat-pill{min-width:80px;padding:10px 4px;}
+  .cat-pill span{font-size:11.5px;}
+  .hero-trust{gap:16px;}
+  .cta-band{padding:32px 20px;}
+  section{padding:40px 16px;}
+  .hero{padding:36px 16px 28px;}
+}
