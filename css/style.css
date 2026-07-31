@@ -136,6 +136,35 @@ main{max-width:1000px;margin:0 auto;padding:12px 20px 60px;}
 
 .section-title{font-size:15px;color:var(--ink-soft);margin:22px 0 10px;font-weight:600;letter-spacing:.02em;}
 
+/* LIST CONTROLS: search, sort, favorites */
+.list-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center;}
+.search-input{
+  flex:1;min-width:180px;border:1.5px solid var(--border);border-radius:20px;padding:9px 16px;
+  font-family:'Inter',sans-serif;font-size:13.5px;background:var(--surface);color:var(--ink);
+}
+.search-input::placeholder{color:var(--ink-soft);}
+.sort-select{
+  border:1.5px solid var(--border);border-radius:20px;padding:9px 12px;font-size:13px;
+  background:var(--surface);color:var(--ink);font-family:'Inter',sans-serif;cursor:pointer;
+}
+#favToggleBtn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* Row icon action buttons (favorite / delete) */
+.row-icon-actions{display:flex;gap:4px;}
+.icon-btn{
+  border:1.5px solid var(--border);background:var(--surface);border-radius:8px;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--ink-soft);
+  transition:border-color .15s ease, color .15s ease;
+}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+.icon-btn.fav-active{color:var(--accent);border-color:var(--accent);}
+.icon-btn-wide{width:auto;padding:6px 10px;gap:5px;font-size:12px;font-weight:600;}
+
+.badge-new{
+  display:inline-block;background:var(--sky);color:#fff;font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:10px;margin-left:6px;letter-spacing:.02em;vertical-align:middle;
+}
+
 /* LISTINGS */
 .list{display:flex;flex-direction:column;gap:10px;}
 .row-card{

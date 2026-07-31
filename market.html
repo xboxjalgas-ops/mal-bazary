@@ -40,6 +40,15 @@
   </div>
 
   <div id="animalsView">
+    <div class="list-controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Іздеу (мыс: сиыр, қошақан...)" oninput="onSearchInput()">
+      <select id="sortSelect" class="sort-select" onchange="onSortChange()">
+        <option value="newest">Ең жаңасы</option>
+        <option value="price-asc">Баға: арзаннан</option>
+        <option value="price-desc">Баға: қымбаттан</option>
+      </select>
+      <button class="chip" id="favToggleBtn" onclick="toggleFavoritesOnly()">☆ Таңдаулылар</button>
+    </div>
     <div class="section-title" id="listCount">Барлық хабарландырулар</div>
     <div class="list" id="listingsList"></div>
   </div>

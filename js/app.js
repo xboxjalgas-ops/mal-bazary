@@ -90,16 +90,17 @@ let userProducts = []; // Supabase-тен жүктеледі: {tag, tagText, nam
 
 function normalizeListing(row){
   return {
-    type: row.type, title: row.title, desc: row.description || '',
+    id: row.id, type: row.type, title: row.title, desc: row.description || '',
     price: row.price, loc: row.location, seller: row.seller_name, phone: row.seller_phone,
-    avatar: row.seller_avatar || null
+    avatar: row.seller_avatar || null, createdAt: row.created_at
   };
 }
 function normalizeProduct(row){
   return {
-    tag: row.category, tagText: tagLabels[row.category] || '', name: row.name,
+    id: row.id, tag: row.category, tagText: tagLabels[row.category] || '', name: row.name,
     desc: row.description || '', price: row.price, loc: row.location,
-    seller: row.seller_name, phone: row.seller_phone, avatar: row.seller_avatar || null
+    seller: row.seller_name, phone: row.seller_phone, avatar: row.seller_avatar || null,
+    createdAt: row.created_at
   };
 }
 
@@ -125,6 +126,68 @@ let user = null; // {name, phone}
 const cats = ["Барлығы","Сиыр","Қой","Жылқы","Тауық","Қаз","Үйрек","Қоян"];
 let activeCat = "Барлығы";
 let postKind = "animal"; // "animal" | "product"
+let searchQuery = "";
+let sortMode = "newest";
+let favoritesOnly = false;
+const FAVORITES_KEY = "mb_favorites";
+
+function getFavorites(){
+  try{ return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }catch(e){ return []; }
+}
+function isFavorite(id){ return getFavorites().includes(String(id)); }
+function toggleFavorite(id){
+  id = String(id);
+  let favs = getFavorites();
+  favs = favs.includes(id) ? favs.filter(x=>x!==id) : [...favs, id];
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+  renderListings();
+}
+function toggleFavoritesOnly(){
+  favoritesOnly = !favoritesOnly;
+  document.getElementById('favToggleBtn').classList.toggle('active', favoritesOnly);
+  document.getElementById('favToggleBtn').textContent = favoritesOnly ? '★ Таңдаулылар' : '☆ Таңдаулылар';
+  renderListings();
+}
+function onSearchInput(){
+  searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+  renderListings();
+}
+function onSortChange(){
+  sortMode = document.getElementById('sortSelect').value;
+  renderListings();
+}
+function isNewItem(createdAt){
+  if(!createdAt) return false;
+  return (Date.now() - new Date(createdAt).getTime()) < 24*60*60*1000;
+}
+
+async function deleteListing(id){
+  if(!confirm('Хабарландыруды өшіруге сенімдісіз бе?')) return;
+  try{
+    const res = await fetch('/api/delete-listing', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, phone: user.phone })
+    });
+    const data = await res.json();
+    if(!data.ok){ showToast(data.message || 'Өшірілмеді'); return; }
+    showToast('Хабарландыру өшірілді');
+    await loadListings();
+  }catch(err){ showToast('Байланыс қатесі'); }
+}
+
+async function deleteProduct(id){
+  if(!confirm('Өшіруге сенімдісіз бе?')) return;
+  try{
+    const res = await fetch('/api/delete-product', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ id, phone: user.phone })
+    });
+    const data = await res.json();
+    if(!data.ok){ showToast(data.message || 'Өшірілмеді'); return; }
+    showToast('Өшірілді');
+    await loadUserProducts();
+  }catch(err){ showToast('Байланыс қатесі'); }
+}
 
 const tagLabels = {"tag-good":"ЖЕМ · САПАЛЫ","tag-budget":"ЖЕМ · ҚОЛЖЕТІМДІ","tag-med":"ДӘРІ-ДӘРМЕК","tag-coop":"ҚҰРАЛ-ЖАБДЫҚ"};
 
@@ -139,26 +202,47 @@ function renderCatbar(){
 function setCat(c){ activeCat = c; renderCatbar(); renderListings(); }
 
 function renderListings(){
-  const filtered = activeCat==="Барлығы" ? listings : listings.filter(l=>l.type===activeCat);
+  let filtered = activeCat==="Барлығы" ? listings.slice() : listings.filter(l=>l.type===activeCat);
+
+  if(searchQuery){
+    filtered = filtered.filter(l =>
+      l.title.toLowerCase().includes(searchQuery) ||
+      (l.desc && l.desc.toLowerCase().includes(searchQuery)) ||
+      l.loc.toLowerCase().includes(searchQuery)
+    );
+  }
+  if(favoritesOnly){
+    filtered = filtered.filter(l => isFavorite(l.id));
+  }
+  if(sortMode === "price-asc"){ filtered.sort((a,b)=>Number(a.price)-Number(b.price)); }
+  else if(sortMode === "price-desc"){ filtered.sort((a,b)=>Number(b.price)-Number(a.price)); }
+  else { filtered.sort((a,b)=> new Date(b.createdAt||0) - new Date(a.createdAt||0)); }
+
   document.getElementById('listCount').textContent = activeCat==="Барлығы" ? `Барлық хабарландырулар (${filtered.length})` : `${activeCat} — ${filtered.length} хабарландыру`;
   const list = document.getElementById('listingsList');
   if(filtered.length===0){
-    list.innerHTML = `<div class="empty-note">Бұл санатта әзірше хабарландыру жоқ. Бірінші болып жариялаңыз!</div>`;
+    list.innerHTML = `<div class="empty-note">Ештеңе табылмады. Іздеуді немесе санатты өзгертіп көріңіз.</div>`;
     return;
   }
-  list.innerHTML = filtered.map((l)=>`
+  list.innerHTML = filtered.map((l)=>{
+    const isOwn = user && user.phone === l.phone;
+    return `
     <div class="row-card">
       <div class="row-icon" style="background:${catColors[l.type]}18;">${iconChip(l.type)}</div>
       <div class="row-body">
-        <div class="row-title">${escapeHTML(l.title)}</div>
+        <div class="row-title">${escapeHTML(l.title)}${isNewItem(l.createdAt) ? '<span class="badge-new">Жаңа</span>' : ''}</div>
         <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><span>${l.avatar ? `<img src="${escapeHTML(l.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">` : "👤 "}${escapeHTML(l.seller)}</span></div>
       </div>
       <div class="row-actions">
+        <div class="row-icon-actions">
+          <button class="icon-btn ${isFavorite(l.id)?'fav-active':''}" onclick="toggleFavorite('${l.id}')" title="Таңдаулыға қосу">${isFavorite(l.id)?'★':'☆'}</button>
+          ${isOwn ? `<button class="icon-btn" onclick="deleteListing('${l.id}')" title="Өшіру">🗑</button>` : ''}
+        </div>
         <div class="row-price">${Number(l.price).toLocaleString('ru-RU')} ₸</div>
         <button class="btn btn-sky btn-small" onclick="openCall(${listings.indexOf(l)})">📞 Қоңырау шалу</button>
       </div>
     </div>
-  `).join('');
+  `;}).join('');
 }
 
 function renderProducts(){
@@ -182,12 +266,16 @@ function renderProducts(){
     upEmpty.style.display = 'block';
   }else{
     upEmpty.style.display = 'none';
-    upGrid.innerHTML = userProducts.map(p=>`
-      <div class="prod-card"><span class="prod-tag ${p.tag}">${tagLabels[p.tag]}</span>
+    upGrid.innerHTML = userProducts.map(p=>{
+      const isOwn = user && user.phone === p.phone;
+      return `
+      <div class="prod-card"><span class="prod-tag ${p.tag}">${tagLabels[p.tag]}</span>${isNewItem(p.createdAt) ? '<span class="badge-new">Жаңа</span>' : ''}
         <div class="prod-name">${escapeHTML(p.name)}</div><div class="prod-desc">${escapeHTML(p.desc)}</div>
         <div class="prod-price">${escapeHTML(p.price)}</div>
         <div class="prod-meta">📍 ${escapeHTML(p.loc)} · ${p.avatar ? `<img src="${escapeHTML(p.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">` : "👤 "}${escapeHTML(p.seller)}</div>
-      </div>`).join('');
+        ${isOwn ? `<button class="icon-btn icon-btn-wide" style="margin-top:8px;" onclick="deleteProduct('${p.id}')" title="Өшіру">🗑 Өшіру</button>` : ''}
+      </div>`;
+    }).join('');
   }
 }
 
@@ -308,6 +396,7 @@ async function completeLogin(phone, name, avatarUrl){
   user = { name, phone, avatarUrl: avatarUrl || null };
   updateHeader();
   closeModal('registerModal');
+  renderListings(); renderProducts();
   try{
     const res = await fetch('/api/create-session', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -333,6 +422,7 @@ async function restoreSession(){
     if(userData.ok && userData.exists){
       user = { name: userData.name, phone: data.phone, avatarUrl: userData.avatar_url || null };
       updateHeader();
+      renderListings(); renderProducts();
     }
   }catch(err){}
 }
@@ -344,6 +434,7 @@ function logout(){
   document.getElementById('headActions').innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
     <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   showToast('Шықтыңыз');
+  renderListings(); renderProducts();
 }
 
 function switchAccount(){
@@ -353,6 +444,7 @@ function switchAccount(){
   document.getElementById('headActions').innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
     <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   openModal('registerModal');
+  renderListings(); renderProducts();
 }
 
 function avatarHTML(avatarUrl, initials){
