@@ -13,6 +13,30 @@
   --shadow-md:0 4px 14px rgba(38,43,32,.08), 0 1px 3px rgba(38,43,32,.06);
   --shadow-lg:0 12px 32px rgba(38,43,32,.14), 0 2px 8px rgba(38,43,32,.08);
 }
+/* ТҮНГІ ТЕМА — ай, жұлдыздар, кішкене қараңғылық */
+html[data-theme="dark"]{
+  --bg:#12151C;
+  --surface:#1B1F29;
+  --ink:#E8E6DE;
+  --ink-soft:#9AA0AE;
+  --primary:#5B8B6F;
+  --primary-dark:#4A7259;
+  --accent:#D98C4A;
+  --sky:#6FA8C7;
+  --border:#2A2F3B;
+  --danger:#D97A66;
+}
+html[data-theme="dark"] body{background:
+  radial-gradient(1.5px 1.5px at 8% 12%, rgba(255,255,255,.5) 0, transparent 60%),
+  radial-gradient(1.5px 1.5px at 22% 28%, rgba(255,255,255,.35) 0, transparent 60%),
+  radial-gradient(1px 1px at 68% 8%, rgba(255,255,255,.4) 0, transparent 60%),
+  radial-gradient(1.5px 1.5px at 85% 22%, rgba(255,255,255,.3) 0, transparent 60%),
+  radial-gradient(1px 1px at 45% 15%, rgba(255,255,255,.3) 0, transparent 60%),
+  radial-gradient(1.5px 1.5px at 92% 45%, rgba(255,255,255,.25) 0, transparent 60%),
+  var(--bg);
+  background-attachment:fixed;
+}
+
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{
@@ -58,6 +82,13 @@ header{
 .logo-text{font-family:'PT Serif',serif;font-weight:700;font-size:20px;color:var(--primary-dark);line-height:1;}
 .logo-sub{font-size:11px;color:var(--ink-soft);letter-spacing:.04em;}
 .head-actions{display:flex;gap:8px;align-items:center;}
+.theme-toggle-btn{
+  width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);
+  transition:border-color .15s ease, color .15s ease, transform .15s ease;flex-shrink:0;
+}
+.theme-toggle-btn:hover{border-color:var(--accent);color:var(--accent);transform:rotate(15deg);}
+.theme-toggle-btn svg{width:19px;height:19px;}
 .btn{
   border:none;border-radius:9px;font-family:'Inter',sans-serif;font-weight:600;
   cursor:pointer;transition:transform .12s ease, opacity .12s ease, box-shadow .15s ease;
@@ -148,6 +179,33 @@ main{max-width:1000px;margin:0 auto;padding:12px 20px 60px;}
   color:var(--ink-soft);cursor:pointer;
 }
 .seg-btn.active{background:var(--surface);color:var(--primary-dark);box-shadow:0 1px 3px rgba(0,0,0,.08);}
+
+/* PROFILE MODAL */
+.profile-avatar-row{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:20px;}
+.profile-avatar{
+  width:84px;height:84px;border-radius:50%;object-fit:cover;
+  background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;
+  font-family:'PT Serif',serif;font-size:30px;font-weight:700;border:3px solid var(--border);
+}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-name{font-weight:700;font-size:16px;}
+.profile-phone{font-size:12.5px;color:var(--ink-soft);}
+.avatar-upload-btn{font-size:12.5px;color:var(--sky);background:none;border:none;cursor:pointer;font-weight:600;padding:4px 8px;}
+.avatar-upload-btn:hover{text-decoration:underline;}
+
+.theme-row{display:flex;gap:10px;margin-bottom:18px;}
+.theme-swatch{
+  flex:1;border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;cursor:pointer;
+  text-align:center;background:var(--surface);transition:border-color .15s ease, transform .15s ease;
+}
+.theme-swatch.active{border-color:var(--accent);border-width:2px;}
+.theme-swatch:hover{transform:translateY(-1px);}
+.theme-swatch-preview{height:36px;border-radius:8px;margin-bottom:8px;}
+.theme-swatch-preview.light{background:linear-gradient(135deg,#EAE2CC 50%,#3F5A38 50%);}
+.theme-swatch-preview.dark{background:linear-gradient(135deg,#12151C 50%,#5B8B6F 50%);}
+.theme-swatch span{font-size:12.5px;font-weight:600;}
+
+.profile-actions{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
 
 /* MODAL */
 .overlay{

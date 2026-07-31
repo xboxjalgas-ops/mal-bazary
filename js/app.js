@@ -91,14 +91,15 @@ let userProducts = []; // Supabase-тен жүктеледі: {tag, tagText, nam
 function normalizeListing(row){
   return {
     type: row.type, title: row.title, desc: row.description || '',
-    price: row.price, loc: row.location, seller: row.seller_name, phone: row.seller_phone
+    price: row.price, loc: row.location, seller: row.seller_name, phone: row.seller_phone,
+    avatar: row.seller_avatar || null
   };
 }
 function normalizeProduct(row){
   return {
     tag: row.category, tagText: tagLabels[row.category] || '', name: row.name,
     desc: row.description || '', price: row.price, loc: row.location,
-    seller: row.seller_name, phone: row.seller_phone
+    seller: row.seller_name, phone: row.seller_phone, avatar: row.seller_avatar || null
   };
 }
 
@@ -150,7 +151,7 @@ function renderListings(){
       <div class="row-icon" style="background:${catColors[l.type]}18;">${iconChip(l.type)}</div>
       <div class="row-body">
         <div class="row-title">${escapeHTML(l.title)}</div>
-        <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><span>👤 ${escapeHTML(l.seller)}</span></div>
+        <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><span>${l.avatar ? `<img src="${escapeHTML(l.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">` : "👤 "}${escapeHTML(l.seller)}</span></div>
       </div>
       <div class="row-actions">
         <div class="row-price">${Number(l.price).toLocaleString('ru-RU')} ₸</div>
@@ -185,7 +186,7 @@ function renderProducts(){
       <div class="prod-card"><span class="prod-tag ${p.tag}">${tagLabels[p.tag]}</span>
         <div class="prod-name">${escapeHTML(p.name)}</div><div class="prod-desc">${escapeHTML(p.desc)}</div>
         <div class="prod-price">${escapeHTML(p.price)}</div>
-        <div class="prod-meta">📍 ${escapeHTML(p.loc)} · 👤 ${escapeHTML(p.seller)}</div>
+        <div class="prod-meta">📍 ${escapeHTML(p.loc)} · ${p.avatar ? `<img src="${escapeHTML(p.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">` : "👤 "}${escapeHTML(p.seller)}</div>
       </div>`).join('');
   }
 }
@@ -265,7 +266,7 @@ async function verifyTelegramCode(){
     const userData = await userRes.json();
 
     if(userData.ok && userData.exists){
-      await completeLogin(telegramPhone, userData.name);
+      await completeLogin(telegramPhone, userData.name, userData.avatar_url);
       showToast('Қайта келуіңізбен, ' + userData.name + '!');
     } else {
       document.getElementById('regStep1').classList.add('step-hidden');
@@ -303,11 +304,10 @@ async function finishRegister(){
 // Тіркелу/кіру сәтті болған соң: user күйін орнатып, ұзақ мерзімді
 // сессия токенін алып, localStorage-ке сақтайды (келесі жолы Telegram
 // арқылы қайта растаудың қажеті болмайды).
-async function completeLogin(phone, name){
-  user = { name, phone };
+async function completeLogin(phone, name, avatarUrl){
+  user = { name, phone, avatarUrl: avatarUrl || null };
   updateHeader();
   closeModal('registerModal');
-
   try{
     const res = await fetch('/api/create-session', {
       method:'POST', headers:{'Content-Type':'application/json'},
@@ -315,10 +315,9 @@ async function completeLogin(phone, name){
     });
     const data = await res.json();
     if(data.ok){ localStorage.setItem(SESSION_KEY, data.token); }
-  }catch(err){ /* сессия сақталмаса да, ағымдағы кіру жұмыс істей береді */ }
+  }catch(err){}
 }
 
-// Бет ашылғанда: localStorage-те сақталған сессия бар ма, тексереді.
 async function restoreSession(){
   const token = localStorage.getItem(SESSION_KEY);
   if(!token) return;
@@ -329,31 +328,129 @@ async function restoreSession(){
     });
     const data = await res.json();
     if(!data.ok){ localStorage.removeItem(SESSION_KEY); return; }
-
     const userRes = await fetch(`/api/get-user?phone=${encodeURIComponent(data.phone)}`);
     const userData = await userRes.json();
     if(userData.ok && userData.exists){
-      user = { name: userData.name, phone: data.phone };
+      user = { name: userData.name, phone: data.phone, avatarUrl: userData.avatar_url || null };
       updateHeader();
     }
-  }catch(err){ /* тыныш, қалыпты (тіркелмеген) күймен жалғастырамыз */ }
+  }catch(err){}
 }
 
 function logout(){
   user = null;
   localStorage.removeItem(SESSION_KEY);
-  const el = document.getElementById('headActions');
-  el.innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
+  closeModal('profileModal');
+  document.getElementById('headActions').innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
     <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   showToast('Шықтыңыз');
+}
+
+function switchAccount(){
+  user = null;
+  localStorage.removeItem(SESSION_KEY);
+  closeModal('profileModal');
+  document.getElementById('headActions').innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
+    <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
+  openModal('registerModal');
+}
+
+function avatarHTML(avatarUrl, initials){
+  return avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="">` : escapeHTML(initials);
 }
 
 function updateHeader(){
   const el = document.getElementById('headActions');
   if(user){
     const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-    el.innerHTML = `<div class="user-chip" style="cursor:pointer;" onclick="logout()" title="Шығу"><div class="avatar">${escapeHTML(initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div>
+    el.innerHTML = `<div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl, initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div>
       <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
+  }
+}
+
+/* ---------- ТЕМА ---------- */
+const THEME_KEY = "mb_theme";
+function setTheme(theme){
+  const t = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem(THEME_KEY, t);
+  const lightSw = document.getElementById('themeSwatchLight');
+  const darkSw = document.getElementById('themeSwatchDark');
+  if(lightSw && darkSw){
+    lightSw.classList.toggle('active', t !== 'dark');
+    darkSw.classList.toggle('active', t === 'dark');
+  }
+  const sun = document.getElementById('themeIconSun');
+  const moon = document.getElementById('themeIconMoon');
+  if(sun && moon){
+    sun.style.display = t === 'dark' ? 'none' : 'block';
+    moon.style.display = t === 'dark' ? 'block' : 'none';
+  }
+}
+function toggleTheme(){
+  const cur = localStorage.getItem(THEME_KEY) || 'light';
+  setTheme(cur === 'dark' ? 'light' : 'dark');
+}
+function initTheme(){
+  setTheme(localStorage.getItem(THEME_KEY) || 'light');
+}
+
+/* ---------- ПРОФИЛЬ МОДАЛЫ ---------- */
+function openProfileModal(){
+  if(!user) return;
+  const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('profileAvatarBox').innerHTML = avatarHTML(user.avatarUrl, initials);
+  document.getElementById('profileName').textContent = user.name;
+  document.getElementById('profilePhone').textContent = user.phone;
+  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  document.getElementById('themeSwatchLight').classList.toggle('active', saved !== 'dark');
+  document.getElementById('themeSwatchDark').classList.toggle('active', saved === 'dark');
+  openModal('profileModal');
+}
+
+function handleAvatarChange(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file || !user) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const size = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size / img.width, size / img.height);
+      const w = img.width * scale, h = img.height * scale;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      canvas.toBlob(async function(blob){
+        const buf = await blob.arrayBuffer();
+        let binary = '';
+        const bytes = new Uint8Array(buf);
+        for(let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        await uploadAvatar(btoa(binary), 'image/jpeg');
+      }, 'image/jpeg', 0.85);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadAvatar(base64, mimeType){
+  showToast('Сурет жүктелуде...');
+  try{
+    const res = await fetch('/api/upload-avatar', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ phone: user.phone, imageBase64: base64, mimeType })
+    });
+    const data = await res.json();
+    if(!data.ok){ showToast(data.message || 'Сурет жүктелмеді'); return; }
+    user.avatarUrl = data.avatar_url;
+    updateHeader();
+    const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('profileAvatarBox').innerHTML = avatarHTML(user.avatarUrl, initials);
+    showToast('Сурет жаңартылды!');
+  }catch(err){
+    showToast('Байланыс қатесі, қайталап көріңіз');
   }
 }
 
@@ -421,6 +518,7 @@ function showToast(msg){
 }
 
 /* ---------- INIT ---------- */
+initTheme();
 attachPhoneMask(document.getElementById('postPhone'));
 resetPhoneField('postPhone');
 renderCatbar();

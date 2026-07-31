@@ -11,6 +11,7 @@ create table if not exists users (
   id uuid primary key default gen_random_uuid(),
   phone text unique not null,
   name text not null,
+  avatar_url text,
   created_at timestamptz not null default now()
 );
 
@@ -18,6 +19,14 @@ alter table users enable row level security;
 -- Назар аударыңыз: users кестесіне ешбір public policy жасалмады —
 -- демек RLS оны толығымен жабады. Тек Netlify/Vercel функциялары
 -- (service_role кілтімен) оқи/жаза алады.
+
+-- Аватар суреттерін сақтауға арналған Storage bucket (ашық оқу үшін)
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy if not exists "Public read avatars" on storage.objects
+  for select using (bucket_id = 'avatars');
 
 -- Мал/хабарландыру кестесі
 create table if not exists listings (
@@ -29,6 +38,7 @@ create table if not exists listings (
   location text not null,
   seller_name text not null,
   seller_phone text not null,
+  seller_avatar text,
   created_at timestamptz not null default now()
 );
 
@@ -42,6 +52,7 @@ create table if not exists products (
   location text not null,
   seller_name text not null,
   seller_phone text not null,
+  seller_avatar text,
   created_at timestamptz not null default now()
 );
 

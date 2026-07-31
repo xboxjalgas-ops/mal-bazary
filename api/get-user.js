@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const url = `${process.env.SUPABASE_URL}/rest/v1/users?select=name,phone&phone=eq.${encodeURIComponent(phone)}`;
+    const url = `${process.env.SUPABASE_URL}/rest/v1/users?select=name,phone,avatar_url&phone=eq.${encodeURIComponent(phone)}`;
     const supaRes = await fetch(url, {
       headers: {
         apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
     }
     const data = await supaRes.json();
     if (data.length > 0) {
-      return res.status(200).json({ ok: true, exists: true, name: data[0].name });
+      return res.status(200).json({ ok: true, exists: true, name: data[0].name, avatar_url: data[0].avatar_url || null });
     }
     return res.status(200).json({ ok: true, exists: false });
   } catch (err) {

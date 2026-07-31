@@ -43,6 +43,23 @@ exports.handler = async (event) => {
   if (phoneDigits.length < 10) return bad('Телефон нөмірі қате');
 
   try {
+    let sellerAvatar = null;
+    try {
+      const userLookup = await fetch(
+        `${process.env.SUPABASE_URL}/rest/v1/users?select=avatar_url&phone=eq.${encodeURIComponent(sellerPhone)}`,
+        {
+          headers: {
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      );
+      if (userLookup.ok) {
+        const userData = await userLookup.json();
+        if (userData.length > 0) sellerAvatar = userData[0].avatar_url || null;
+      }
+    } catch { /* аватар табылмаса, жоқтың есебінде жалғастырамыз */ }
+
     const url = `${process.env.SUPABASE_URL}/rest/v1/listings`;
     const res = await fetch(url, {
       method: 'POST',
@@ -61,6 +78,7 @@ exports.handler = async (event) => {
           location,
           seller_name: sellerName,
           seller_phone: sellerPhone,
+          seller_avatar: sellerAvatar,
         },
       ]),
     });
