@@ -106,7 +106,7 @@ function normalizeProduct(row){
 
 async function loadListings(){
   try{
-    const res = await fetch('/api/get-listings');
+    const res = await fetch('/api/get-data?type=listings');
     const data = await res.json();
     if(data.ok){ listings = data.listings.map(normalizeListing); }
   }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
@@ -115,7 +115,7 @@ async function loadListings(){
 
 async function loadUserProducts(){
   try{
-    const res = await fetch('/api/get-products');
+    const res = await fetch('/api/get-data?type=products');
     const data = await res.json();
     if(data.ok){ userProducts = data.products.map(normalizeProduct); }
   }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
@@ -164,9 +164,9 @@ function isNewItem(createdAt){
 async function deleteListing(id){
   if(!confirm('Хабарландыруды өшіруге сенімдісіз бе?')) return;
   try{
-    const res = await fetch('/api/delete-listing', {
+    const res = await fetch('/api/delete-post', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id, phone: user.phone })
+      body: JSON.stringify({ kind:'listing', id, phone: user.phone })
     });
     const data = await res.json();
     if(!data.ok){ showToast(data.message || 'Өшірілмеді'); return; }
@@ -178,9 +178,9 @@ async function deleteListing(id){
 async function deleteProduct(id){
   if(!confirm('Өшіруге сенімдісіз бе?')) return;
   try{
-    const res = await fetch('/api/delete-product', {
+    const res = await fetch('/api/delete-post', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ id, phone: user.phone })
+      body: JSON.stringify({ kind:'product', id, phone: user.phone })
     });
     const data = await res.json();
     if(!data.ok){ showToast(data.message || 'Өшірілмеді'); return; }
@@ -350,7 +350,7 @@ async function verifyTelegramCode(){
 
     // Бұл нөмір бұрын тіркелген бе, тексереміз — солай болса, аты-жөнін
     // қайта сұрамай-ақ, бірден тіркелуді аяқтаймыз.
-    const userRes = await fetch(`/api/get-user?phone=${encodeURIComponent(telegramPhone)}`);
+    const userRes = await fetch(`/api/user?phone=${encodeURIComponent(telegramPhone)}`);
     const userData = await userRes.json();
 
     if(userData.ok && userData.exists){
@@ -375,7 +375,7 @@ async function finishRegister(){
   if(!telegramPhone){ showToast('Алдымен Telegram арқылы нөміріңізді растаңыз'); return; }
 
   try{
-    const res = await fetch('/api/create-user', {
+    const res = await fetch('/api/user', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ phone: telegramPhone, name })
     });
@@ -398,9 +398,9 @@ async function completeLogin(phone, name, avatarUrl){
   closeModal('registerModal');
   renderListings(); renderProducts();
   try{
-    const res = await fetch('/api/create-session', {
+    const res = await fetch('/api/session', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ phone })
+      body: JSON.stringify({ action:'create', phone })
     });
     const data = await res.json();
     if(data.ok){ localStorage.setItem(SESSION_KEY, data.token); }
@@ -411,13 +411,13 @@ async function restoreSession(){
   const token = localStorage.getItem(SESSION_KEY);
   if(!token) return;
   try{
-    const res = await fetch('/api/verify-session', {
+    const res = await fetch('/api/session', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ action:'verify', token })
     });
     const data = await res.json();
     if(!data.ok){ localStorage.removeItem(SESSION_KEY); return; }
-    const userRes = await fetch(`/api/get-user?phone=${encodeURIComponent(data.phone)}`);
+    const userRes = await fetch(`/api/user?phone=${encodeURIComponent(data.phone)}`);
     const userData = await userRes.json();
     if(userData.ok && userData.exists){
       user = { name: userData.name, phone: data.phone, avatarUrl: userData.avatar_url || null };
@@ -563,9 +563,9 @@ async function submitPost(){
       const loc = document.getElementById('postLoc').value.trim();
       if(!title || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
-      const res = await fetch('/api/create-listing', {
+      const res = await fetch('/api/create-post', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ type, title, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
+        body: JSON.stringify({ kind:'listing', type, title, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
       });
       const data = await res.json();
       if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
@@ -581,9 +581,9 @@ async function submitPost(){
       const loc = document.getElementById('prodLoc').value.trim();
       if(!name || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
-      const res = await fetch('/api/create-product', {
+      const res = await fetch('/api/create-post', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ category: tag, name, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
+        body: JSON.stringify({ kind:'product', category: tag, name, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
       });
       const data = await res.json();
       if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
