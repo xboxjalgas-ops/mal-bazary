@@ -361,3 +361,12 @@ button.chip{font-family:inherit;}
 .row-icon{width:64px;height:64px;overflow:hidden;background:var(--bg)!important}.placeholder-photo{filter:saturate(.88) contrast(1.02)}
 .product-placeholder{cursor:default}.product-placeholder img{filter:saturate(.85)}
 @media(max-width:520px){.row-icon{width:58px;height:58px}.cat-photo-icon{width:20px;height:20px}}
+
+/* Refero-inspired refinement: quiet depth, spotlight and motion */
+.fx-progress{position:fixed;z-index:400;left:0;right:0;top:0;height:3px;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,var(--primary),var(--accent),var(--sky));box-shadow:0 0 14px color-mix(in srgb,var(--accent) 55%,transparent);pointer-events:none}
+.fx-ready .fx-reveal{opacity:0;transform:translateY(22px);filter:blur(3px)}.fx-ready .fx-reveal.fx-visible{opacity:1;transform:translateY(0);filter:blur(0);transition:opacity .62s ease var(--fx-delay,0ms),transform .62s cubic-bezier(.2,.75,.25,1) var(--fx-delay,0ms),filter .5s ease var(--fx-delay,0ms)}
+.fx-card{position:relative;isolation:isolate}.fx-card::before{content:'';position:absolute;inset:0;border-radius:inherit;z-index:-1;pointer-events:none;opacity:0;background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--accent) 12%,transparent),transparent 68%);transition:opacity .25s ease}.fx-card:hover::before{opacity:1}
+.btn{position:relative;overflow:hidden}.fx-ripple{position:absolute;width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.42);pointer-events:none;transform:translate(-50%,-50%) scale(0);animation:fx-ripple .62s ease-out forwards}@keyframes fx-ripple{to{transform:translate(-50%,-50%) scale(18);opacity:0}}
+header,.landing-header{background:color-mix(in srgb,var(--bg) 84%,transparent);backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15)}
+.row-card,.prod-card,.feature-card,.step,.cat-pill{will-change:transform}.row-card:hover,.prod-card:hover{box-shadow:0 14px 36px rgba(15,25,20,.13);transform:translateY(-3px)}
+@media(prefers-reduced-motion:reduce){.fx-ready .fx-reveal{opacity:1;transform:none;filter:none}.fx-progress,.fx-ripple{display:none!important}.fx-card::before{display:none}}
