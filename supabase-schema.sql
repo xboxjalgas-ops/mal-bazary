@@ -42,7 +42,22 @@ create table if not exists products (
   created_at timestamptz not null default now()
 );
 
+create table if not exists support_tickets (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid not null references auth.users(id) on delete cascade,
+  user_name text not null,
+  user_email text,
+  category text not null,
+  subject text not null check (char_length(subject) between 5 and 120),
+  message text not null check (char_length(message) between 10 and 2000),
+  status text not null default 'new' check (status in ('new','in_progress','answered','closed')),
+  admin_reply text not null default '' check (char_length(admin_reply) <= 2000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table users enable row level security;
+alter table support_tickets enable row level security;
 alter table listings enable row level security;
 alter table products enable row level security;
 
@@ -65,6 +80,8 @@ do $$ begin
   end if;
 end $$;
 
+create index if not exists support_tickets_user_created_idx on support_tickets (auth_user_id, created_at desc);
+create index if not exists support_tickets_status_created_idx on support_tickets (status, created_at desc);
 create index if not exists users_auth_user_id_idx on users (auth_user_id);
 create index if not exists users_email_idx on users (email);
 create index if not exists listings_created_at_idx on listings (created_at desc);

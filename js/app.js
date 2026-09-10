@@ -410,7 +410,7 @@ async function initializeAuth(){
 
 async function logout(){
   await signOutAuth(); user=null; closeModal('profileModal');
-  document.getElementById('headActions').innerHTML=`<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Кіру</button><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
+  document.getElementById('headActions').innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Кіру</button><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   showToast('Шықтыңыз');renderListings();renderProducts();
 }
 async function switchAccount(){ await logout(); openModal('registerModal'); }
@@ -418,7 +418,7 @@ function avatarHTML(avatarUrl, initials){ return avatarUrl ? `<img src="${escape
 function updateHeader(){
   const el=document.getElementById('headActions'); if(!user)return;
   const initials=user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-  el.innerHTML=`<div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div>${escapeHTML(user.name.split(' ')[0])}${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
+  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()">❓ <span class="help-label">Көмек</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div>${escapeHTML(user.name.split(' ')[0])}${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
 }
 
 
@@ -560,6 +560,45 @@ async function submitPost(){
   }finally{
     if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Жариялау'; }
   }
+}
+
+/* ---------- SUPPORT CENTER ---------- */
+const TICKET_STATUS_LABELS={new:'Жаңа',in_progress:'Қаралуда',answered:'Жауап берілді',closed:'Жабылды'};
+async function openSupport(){
+  openModal('supportModal');
+  document.getElementById('supportGuestNote').style.display=user?'none':'flex';
+  document.getElementById('supportForm').style.display=user?'block':'none';
+  document.querySelector('.support-tickets-section').style.display=user?'block':'none';
+  if(user)await loadSupportTickets();
+}
+async function loadSupportTickets(){
+  const box=document.getElementById('supportTickets');box.innerHTML='<div class="empty-note">Жүктелуде...</div>';
+  try{
+    const r=await apiFetch('/api/support'),data=await r.json();
+    if(!r.ok||!data.ok){box.innerHTML=`<div class="empty-note">${escapeHTML(data.message||'Жүктелмеді')}</div>`;return;}
+    document.getElementById('ticketsHeading').textContent=data.isAdmin?'Барлық қолдау өтінімдері':'Менің өтінімдерім';
+    renderSupportTickets(data.tickets||[],data.isAdmin);
+  }catch{box.innerHTML='<div class="empty-note">Байланыс қатесі</div>';}
+}
+function renderSupportTickets(tickets,isAdmin){
+  const box=document.getElementById('supportTickets');
+  if(!tickets.length){box.innerHTML='<div class="empty-note">Әзірше өтінім жоқ.</div>';return;}
+  box.innerHTML=tickets.map(t=>`<div class="ticket-card">
+    <div class="ticket-head"><div><div class="ticket-title">${escapeHTML(t.subject)}</div><div class="ticket-meta">${escapeHTML(t.category)} · ${new Date(t.created_at).toLocaleString('kk-KZ')}${isAdmin?` · ${escapeHTML(t.user_name||'')} · ${escapeHTML(t.user_email||'')}`:''}</div></div><span class="ticket-status ${escapeHTML(t.status)}">${escapeHTML(TICKET_STATUS_LABELS[t.status]||t.status)}</span></div>
+    <div class="ticket-message">${escapeHTML(t.message)}</div>
+    ${t.admin_reply?`<div class="ticket-reply"><b>Қолдау жауабы:</b><br>${escapeHTML(t.admin_reply)}</div>`:''}
+    ${isAdmin?`<div class="ticket-admin-actions"><select id="ticketStatus-${t.id}"><option value="new" ${t.status==='new'?'selected':''}>Жаңа</option><option value="in_progress" ${t.status==='in_progress'?'selected':''}>Қаралуда</option><option value="answered" ${t.status==='answered'?'selected':''}>Жауап берілді</option><option value="closed" ${t.status==='closed'?'selected':''}>Жабылды</option></select><input id="ticketReply-${t.id}" maxlength="2000" value="${escapeHTML(t.admin_reply||'')}" placeholder="Жауап жазыңыз"><button class="btn btn-primary btn-small" onclick="answerSupportTicket('${t.id}')">Сақтау</button></div>`:''}
+  </div>`).join('');
+}
+async function submitSupportTicket(){
+  const category=document.getElementById('supportCategory').value,subject=document.getElementById('supportSubject').value.trim(),message=document.getElementById('supportMessage').value.trim();
+  if(subject.length<5||message.length<10){showToast('Тақырып пен мәселені толығырақ жазыңыз');return;}
+  const btn=document.getElementById('supportSubmitBtn');btn.disabled=true;btn.textContent='Жіберілуде...';
+  try{const r=await apiFetch('/api/support',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category,subject,message})});const data=await r.json();if(!r.ok||!data.ok){showToast(data.message||'Жіберілмеді');return;}document.getElementById('supportSubject').value='';document.getElementById('supportMessage').value='';showToast('Өтінім жіберілді');await loadSupportTickets();}catch{showToast('Байланыс қатесі');}finally{btn.disabled=false;btn.textContent='Өтінімді жіберу';}
+}
+async function answerSupportTicket(id){
+  const status=document.getElementById(`ticketStatus-${id}`).value,admin_reply=document.getElementById(`ticketReply-${id}`).value.trim();
+  try{const r=await apiFetch('/api/support',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status,admin_reply})});const data=await r.json();if(!r.ok||!data.ok){showToast(data.message||'Сақталмады');return;}showToast('Өтінім жаңартылды');await loadSupportTickets();}catch{showToast('Байланыс қатесі');}
 }
 
 /* ---------- TOAST ---------- */

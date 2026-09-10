@@ -7,7 +7,7 @@
 <meta name="description" content="Қазақстандағы мал және мал шаруашылығы өнімдерінің хабарландырулары.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260910-2">
+<link rel="stylesheet" href="css/style.css?v=20260910-3">
 </head>
 <body>
 
@@ -27,6 +27,7 @@
       <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>
     </button>
     <div class="head-actions" id="headActions">
+      <button class="btn btn-ghost btn-small help-btn" onclick="openSupport()">❓ <span class="help-label">Көмек</span></button>
       <button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Кіру</button>
       <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>
     </div>
@@ -200,6 +201,28 @@
   </div>
 </div>
 
+<!-- SUPPORT CENTER -->
+<div class="overlay" role="dialog" aria-modal="true" id="supportModal">
+  <div class="modal support-modal">
+    <div class="modal-head"><h2 id="supportTitle" style="font-size:19px;">Көмек және қолдау</h2><button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('supportModal')">✕</button></div>
+    <div class="faq-list">
+      <details><summary>Хабарландыруды қалай қосамын?</summary><p>Google арқылы кіріп, профильді толтырыңыз. «Хабарландыру беру» батырмасынан мал немесе өнімді таңдаңыз.</p></details>
+      <details><summary>Суретті қалай жүктеймін?</summary><p>Жариялау формасындағы «Суреттерді таңдау» батырмасы арқылы 8 суретке дейін қосуға болады.</p></details>
+      <details><summary>Хабарландыруды қалай өзгертемін?</summary><p>Өзіңіздің хабарландыруыңыздағы ✏️ батырмасын басыңыз. Сатылғанда «Сатылды» батырмасын қолданыңыз.</p></details>
+      <details><summary>Қауіпсіз сауда қалай жасалады?</summary><p>Малды немесе өнімді көрмей тұрып алдын ала ақша жібермеңіз. Сатушымен сөйлесіп, құжаттарды тексеріңіз.</p></details>
+    </div>
+    <div id="supportGuestNote" class="support-login-note" style="display:none;">Өтінім жіберу үшін Google арқылы кіріңіз.<button class="btn btn-primary btn-small" onclick="closeModal('supportModal');openModal('registerModal')">Кіру</button></div>
+    <div id="supportForm">
+      <h3 class="support-heading">Қолдау қызметіне жазу</h3>
+      <div class="field"><label for="supportCategory">Санат</label><select id="supportCategory"><option>Тіркелу</option><option>Хабарландыру</option><option>Сурет</option><option>Қауіпсіздік</option><option>Техникалық қате</option><option>Басқа</option></select></div>
+      <div class="field"><label for="supportSubject">Тақырып</label><input id="supportSubject" maxlength="120" placeholder="Мәселені қысқаша жазыңыз"></div>
+      <div class="field"><label for="supportMessage">Толық сипаттама</label><textarea id="supportMessage" maxlength="2000" placeholder="Не болғанын және қандай қате шыққанын жазыңыз"></textarea></div>
+      <button class="btn btn-primary full-btn" id="supportSubmitBtn" onclick="submitSupportTicket()">Өтінімді жіберу</button>
+    </div>
+    <div class="support-tickets-section"><h3 class="support-heading" id="ticketsHeading">Менің өтінімдерім</h3><div id="supportTickets" class="support-tickets"></div></div>
+  </div>
+</div>
+
 <!-- IMAGE GALLERY MODAL -->
 <div class="overlay" role="dialog" aria-modal="true" id="galleryModal">
   <div class="modal gallery-modal">
@@ -253,7 +276,7 @@
   </div>
 </div>
 
-<script src="js/auth.js?v=20260910-2"></script>
-<script src="js/app.js?v=20260910-2"></script>
+<script src="js/auth.js?v=20260910-3"></script>
+<script src="js/app.js?v=20260910-3"></script>
 </body>
 </html>
