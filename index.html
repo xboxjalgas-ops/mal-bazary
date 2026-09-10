@@ -12,7 +12,7 @@
 </head>
 <body>
 
-<header class="landing-header">
+<header class="landing-header" id="landingHeader">
   <div class="landing-headrow">
     <div class="logo">
       <div class="logo-mark">
@@ -31,9 +31,23 @@
     <div class="head-actions">
       <a class="btn btn-ghost btn-small" href="market.html" style="text-decoration:none;">Кіру</a>
       <a class="btn btn-primary" href="market.html" style="text-decoration:none;">Нарыққа өту</a>
+      <button class="hamburger-btn" id="hamburgerBtn" aria-label="Мәзір" aria-expanded="false" onclick="toggleMobileNav()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </div>
 </header>
+
+<!-- Мобильді навигация терезесі -->
+<div class="mobile-nav-drawer" id="mobileNavDrawer" role="dialog" aria-label="Навигация">
+  <a href="#qalai" onclick="closeMobileNav()">&#128203; Қалай жұмыс істейді</a>
+  <a href="#maldar" onclick="closeMobileNav()">&#128004; Малдар</a>
+  <a href="#onimder" onclick="closeMobileNav()">&#127806; Өнімдер</a>
+  <div class="drawer-actions">
+    <a class="btn btn-ghost" href="market.html" style="text-decoration:none;">Кіру</a>
+    <a class="btn btn-primary" href="market.html" style="text-decoration:none;">Нарыққа өту →</a>
+  </div>
+</div>
 
 <section class="hero">
   <div>
@@ -129,7 +143,7 @@
       <p>Сапалы және қолжетімді нұсқалар, бағасына қарай таңдай аласың.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h6M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg></div>
+      <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v6M12 16v6M4.9 4.9l4.2 4.2M14.9 14.9l4.2 4.2M2 12h6M16 12h2M4.9 19.1l4.2-4.2M14.9 9.1l4.2-4.2"/></svg></div>
       <h3>Дәрі-дәрмек</h3>
       <p>Ветеринарлық құралдар — иммунитет, дегельминтизация, тұяқ күтімі.</p>
     </div>
@@ -142,17 +156,48 @@
 </section>
 
 <div class="cta-band">
-  <h2>Бүгін тіркеліп, бірінші хабарландыруыңды жария де</h2>
+  <h2>Бүгін тіркеліп, бірінші хабарландыруыңды жарияла де</h2>
   <p>Тегін, тез, делдалсыз — тек Telegram арқылы бір рет расталу жеткілікті.</p>
   <a class="btn btn-primary btn-lg" href="market.html" style="text-decoration:none;">Қазір бастау</a>
 </div>
 
+<!-- Мобильді sticky CTA -->
+<div class="landing-sticky-cta">
+  <a class="btn btn-ghost" href="market.html" style="text-decoration:none;">Кіру</a>
+  <a class="btn btn-primary" href="market.html" style="text-decoration:none;">Нарыққа өту →</a>
+</div>
+
 <footer>
   <div class="footer-row">
-    <span>© Мал Базары — фермерлер нарығы</span>
+    <span>&copy; Мал Базары — фермерлер нарығы</span>
     <a href="market.html" style="text-decoration:none;">Нарыққа өту</a>
   </div>
 </footer>
 
+<script>
+function toggleMobileNav(){
+  var btn=document.getElementById('hamburgerBtn');
+  var drawer=document.getElementById('mobileNavDrawer');
+  var open=drawer.classList.toggle('show');
+  btn.classList.toggle('open',open);
+  btn.setAttribute('aria-expanded',String(open));
+  document.body.style.overflow=open?'hidden':'';
+}
+function closeMobileNav(){
+  var drawer=document.getElementById('mobileNavDrawer');
+  var btn=document.getElementById('hamburgerBtn');
+  drawer.classList.remove('show');
+  btn.classList.remove('open');
+  btn.setAttribute('aria-expanded','false');
+  document.body.style.overflow='';
+}
+document.addEventListener('click',function(e){
+  var drawer=document.getElementById('mobileNavDrawer');
+  var btn=document.getElementById('hamburgerBtn');
+  if(drawer.classList.contains('show')&&!drawer.contains(e.target)&&!btn.contains(e.target)){
+    closeMobileNav();
+  }
+});
+</script>
 </body>
 </html>
