@@ -240,7 +240,8 @@ function renderListings(){
     </div>`;
   }).join('');
 }
-function openCallById(id){const l=listings.find(x=>String(x.id)===String(id));if(!l)return;document.getElementById('callNumber').textContent=l.phone;document.getElementById('callSeller').textContent='Сатушы: '+l.seller+' — '+l.title;document.getElementById('callLink').href='tel:'+l.phone.replace(/\s/g,'');openModal('callModal');}
+let activeCallListingId=null;
+function openCallById(id){activeCallListingId=id;const l=listings.find(x=>String(x.id)===String(id));if(!l)return;document.getElementById('callNumber').textContent=l.phone;document.getElementById('callSeller').textContent='Сатушы: '+l.seller+' — '+l.title;document.getElementById('callLink').href='tel:'+l.phone.replace(/\s/g,'');openModal('callModal');}
 function openGallery(id){
   const l=listings.find(x=>String(x.id)===String(id));if(!l?.images?.length)return;
   document.getElementById('galleryTitle').textContent=l.title;
