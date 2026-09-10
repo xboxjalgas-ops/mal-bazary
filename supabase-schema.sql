@@ -21,7 +21,10 @@ create table if not exists listings (
   seller_name text not null,
   seller_phone text not null check (seller_phone ~ '^\\+7[0-9]{10}$'),
   seller_avatar text,
-  created_at timestamptz not null default now()
+  images jsonb not null default '[]'::jsonb,
+  status text not null default 'active' check (status in ('active','sold')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists products (
@@ -42,12 +45,15 @@ alter table listings enable row level security;
 alter table products enable row level security;
 
 insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true)
+values ('avatars', 'avatars', true), ('listing-images', 'listing-images', true)
 on conflict (id) do update set public = excluded.public;
 
 do $$ begin
   if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Public read avatars') then
     create policy "Public read avatars" on storage.objects for select using (bucket_id = 'avatars');
+  end if;
+  if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Public read listing images') then
+    create policy "Public read listing images" on storage.objects for select using (bucket_id = 'listing-images');
   end if;
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='listings' and policyname='Public read listings') then
     create policy "Public read listings" on listings for select using (true);

@@ -6,6 +6,8 @@
 
 - Google арқылы қауіпсіз кіру (Supabase Auth)
 - Мал және өнім хабарландыруларын жариялау, іздеу, сұрыптау және өшіру
+- Бір хабарландыруға 8 сурет, суреттер галереясы
+- Өз хабарландыруын өңдеу және «Сатылды» деп белгілеу
 - Телефон арқылы сатушымен тікелей байланысу
 - Таңдаулылар, қараңғы режим және профиль аватары
 - Supabase Database және Storage
@@ -23,7 +25,7 @@
 ## Supabase баптауы
 
 1. Жаңа жоба болса `supabase-schema.sql` орындаңыз.
-2. Бұрыннан жұмыс істейтін база болса `supabase-migration.sql` орындаңыз.
+2. Бұрыннан жұмыс істейтін база болса `supabase-migration.sql` орындаңыз. Бұл файл Google Auth бағандарын, хабарландыру суреттерін, статусын және `listing-images` Storage bucket-ын қосады.
 3. Authentication → URL Configuration:
    - Site URL: `https://mal-bazary.vercel.app`
    - Redirect URL: `https://mal-bazary.vercel.app/market.html`

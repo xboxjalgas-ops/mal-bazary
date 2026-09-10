@@ -3,6 +3,7 @@ const ALLOWED_TYPES = ['Сиыр', 'Қой', 'Жылқы', 'Тауық', 'Қаз
 const ALLOWED_TAGS = ['tag-good', 'tag-budget', 'tag-med', 'tag-coop'];
 const headers = extra => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
 const bad = (res, message) => res.status(400).json({ ok: false, message });
+const validImages=images=>Array.isArray(images)&&images.length<=8&&images.every(x=>typeof x==='string'&&x.length<700&&x.startsWith(`${process.env.SUPABASE_URL}/storage/v1/object/public/listing-images/`));
 module.exports = async (req, res) => {
   noStore(res);
   if (req.method !== 'POST') return res.status(405).json({ ok: false, message: 'Method not allowed' });
@@ -23,7 +24,8 @@ module.exports = async (req, res) => {
       if (!ALLOWED_TYPES.includes(type)) return bad(res,'Мал түрі қате');
       if (title.length<3 || title.length>120) return bad(res,'Атауы 3–120 таңба болуы керек');
       if (!Number.isFinite(price)||price<=0||price>1_000_000_000) return bad(res,'Баға қате');
-      table='listings'; record={type,title,description,price,location,seller_name:seller.name,seller_phone:seller.phone,seller_avatar:seller.avatar_url||null};
+      const images=body.images||[]; if(!validImages(images))return bad(res,'Суреттер тізімі қате');
+      table='listings'; record={type,title,description,price,location,images,status:'active',seller_name:seller.name,seller_phone:seller.phone,seller_avatar:seller.avatar_url||null};
     } else {
       const category=String(body.category||'').trim(), name=String(body.name||'').trim(), price=String(body.price||'').trim();
       if (!ALLOWED_TAGS.includes(category)) return bad(res,'Санат қате');
