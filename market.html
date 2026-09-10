@@ -107,6 +107,13 @@
         <label for="postLoc">Орналасқан жері</label>
         <input id="postLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
       </div>
+      <div class="field">
+        <label for="listingImageInput">Суреттер (8-ге дейін)</label>
+        <label class="upload-box" for="listingImageInput">📷 Суреттерді таңдау</label>
+        <input type="file" id="listingImageInput" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="handleListingImages(event)">
+        <div class="image-preview-grid" id="listingImagePreview"></div>
+        <button type="button" class="btn btn-ghost btn-small clear-images-btn" id="clearImagesBtn" onclick="clearListingImages()" style="display:none;">Суреттерді тазалау</button>
+      </div>
     </div>
 
     <div id="productFields" style="display:none;">
@@ -135,9 +142,16 @@
         <label for="prodLoc">Орналасқан жері</label>
         <input id="prodLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
       </div>
+      <div class="field">
+        <label for="productImageInput">Өнім суреттері (8-ге дейін)</label>
+        <label class="upload-box" for="productImageInput">📷 Суреттерді таңдау</label>
+        <input type="file" id="productImageInput" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="handleProductImages(event)">
+        <div class="image-preview-grid" id="productImagePreview"></div>
+        <button type="button" class="btn btn-ghost btn-small clear-images-btn" id="clearProductImagesBtn" onclick="clearProductImages()" style="display:none;">Суреттерді тазалау</button>
+      </div>
     </div>
 
-    <button class="btn btn-primary full-btn" onclick="submitPost()">Жариялау</button>
+    <button class="btn btn-primary full-btn" id="postSubmitBtn" onclick="submitPost()">Жариялау</button>
   </div>
 </div>
 
@@ -186,6 +200,15 @@
   </div>
 </div>
 
+<!-- IMAGE GALLERY MODAL -->
+<div class="overlay" role="dialog" aria-modal="true" id="galleryModal">
+  <div class="modal gallery-modal">
+    <div class="modal-head"><h2 id="galleryTitle" style="font-size:19px;">Суреттер</h2><button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('galleryModal')">✕</button></div>
+    <img id="galleryMain" class="gallery-main" src="" alt="">
+    <div id="galleryThumbs" class="gallery-thumbs"></div>
+  </div>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <!-- PROFILE / SETTINGS MODAL -->
@@ -216,6 +239,11 @@
           <span>🌙 Түнгі аспан</span>
         </div>
       </div>
+    </div>
+
+    <div class="admin-panel" id="adminPanel" style="display:none;">
+      <div class="admin-badge">🛡 Администратор</div>
+      <p class="modal-note">Сіз барлық мал және өнім хабарландыруларын өңдеп, жаба немесе өшіре аласыз.</p>
     </div>
 
     <div class="profile-actions">

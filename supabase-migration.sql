@@ -10,3 +10,24 @@ create index if not exists listings_seller_phone_idx on listings (seller_phone);
 create index if not exists products_created_at_idx on products (created_at desc);
 create index if not exists products_category_created_at_idx on products (category, created_at desc);
 create index if not exists products_seller_phone_idx on products (seller_phone);
+
+-- Listing photos, editing and sold status.
+alter table listings add column if not exists images jsonb not null default '[]'::jsonb;
+alter table listings add column if not exists status text not null default 'active';
+alter table listings add column if not exists updated_at timestamptz not null default now();
+create index if not exists listings_status_created_at_idx on listings (status, created_at desc);
+
+insert into storage.buckets (id, name, public)
+values ('listing-images', 'listing-images', true)
+on conflict (id) do update set public = excluded.public;
+
+do $$ begin
+  if not exists (select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='Public read listing images') then
+    create policy "Public read listing images" on storage.objects for select using (bucket_id = 'listing-images');
+  end if;
+end $$;
+
+-- Admin role and product images.
+alter table users add column if not exists role text not null default 'user';
+update users set role='admin' where lower(email)='xboxjalgas@gmail.com';
+alter table products add column if not exists images jsonb not null default '[]'::jsonb;
