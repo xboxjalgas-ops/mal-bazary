@@ -27,7 +27,7 @@
       <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>
     </button>
     <div class="head-actions" id="headActions">
-      <button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
+      <button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Кіру</button>
       <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>
     </div>
   </div>
@@ -141,38 +141,32 @@
   </div>
 </div>
 
-<!-- REGISTER MODAL -->
+<!-- LOGIN / REGISTER MODAL -->
 <div class="overlay" role="dialog" aria-modal="true" id="registerModal">
   <div class="modal">
     <div class="modal-head">
-      <h2 style="font-size:19px;">Тіркелу</h2>
+      <h2 style="font-size:19px;">Кіру / тіркелу</h2>
       <button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('registerModal')">✕</button>
     </div>
 
-    <div id="regStep1">
-      <p class="modal-note" style="margin-bottom:14px;">
-        1) Төмендегі батырма арқылы Telegram-ды ашыңыз.<br>
-        2) Бот-та <b>«📱 Нөмірімді бөлісу»</b> батырмасын басыңыз.<br>
-        3) Бот жіберген кодты көшіріп, төмендегі өріске қойыңыз.
-      </p>
-      <a class="btn btn-sky full-btn" href="https://t.me/mal_bazary_bot" target="_blank" style="text-decoration:none;justify-content:center;margin-bottom:14px;">Telegram-ды ашу</a>
-      <div class="field">
-        <label for="tgCodeInput">Telegram-нан алған код</label>
-        <textarea id="tgCodeInput" placeholder="Кодты осында қойыңыз" style="min-height:60px;"></textarea>
-      </div>
-      <button class="btn btn-primary full-btn" id="tgVerifyBtn" onclick="verifyTelegramCode()">Тексеру</button>
+    <div id="authStep">
+      <button class="btn btn-google full-btn" onclick="signInWithGoogle()"><span class="google-mark">G</span> Google арқылы кіру</button>
+      <p class="modal-note" style="text-align:center;">Қауіпсіз кіру Google аккаунты арқылы орындалады.</p>
     </div>
 
-    <div id="regStep2" class="step-hidden">
-      <p class="modal-note" style="margin-bottom:12px;">✅ Нөмір расталды: <b id="tgVerifiedPhone"></b></p>
+    <div id="profileSetupStep" class="step-hidden">
+      <p class="modal-note" style="margin-bottom:12px;">Сатушылармен байланысу үшін профильді толтырыңыз.</p>
       <div class="field">
         <label for="regName">Аты-жөніңіз</label>
-        <input id="regName" type="text" placeholder="Мыс: Асхат Нұрланұлы">
+        <input id="regName" type="text" autocomplete="name" maxlength="80" placeholder="Асхат Нұрланұлы">
       </div>
-      <button class="btn btn-primary full-btn" onclick="finishRegister()">Тіркелуді аяқтау</button>
+      <div class="field">
+        <label for="regPhone">Телефон нөміріңіз</label>
+        <input id="regPhone" type="tel" autocomplete="tel" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary full-btn" onclick="finishProfileSetup()">Профильді сақтау</button>
     </div>
-
-    <p class="modal-note">Тіркелгеніңізде сатушымен тікелей қоңырау арқылы байланысасыз, есіміңіз хабарландыруларда көрсетіледі.</p>
+    <p class="modal-note">Аккаунтыңыз Google немесе email арқылы қорғалады. Телефон тек хабарландырудағы байланыс үшін қолданылады.</p>
   </div>
 </div>
 
@@ -231,6 +225,7 @@
   </div>
 </div>
 
+<script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

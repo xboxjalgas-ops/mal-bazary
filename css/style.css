@@ -302,3 +302,6 @@ main{max-width:1000px;margin:0 auto;padding:12px 20px 60px;}
 
 .product-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;}
 button.chip{font-family:inherit;}
+.btn-google{background:var(--surface);color:var(--ink);border:1.5px solid var(--border);box-shadow:var(--shadow-sm);}
+.btn-google:hover{border-color:var(--sky);box-shadow:var(--shadow-md);}
+.google-mark{font-size:18px;font-weight:800;color:#4285f4;}

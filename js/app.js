@@ -305,11 +305,7 @@ function openModal(id){
     setPostKind('animal');
   }
   if(id==='registerModal'){
-    telegramPhone = "";
-    document.getElementById('regStep1').classList.remove('step-hidden');
-    document.getElementById('regStep2').classList.add('step-hidden');
-    document.getElementById('tgCodeInput').value = '';
-    document.getElementById('regName').value = '';
+    if(authSession()) getAuthIdentity().then(identity=>identity&&showProfileSetup(identity)); else showAuthStep();
   }
   lastFocusedElement = document.activeElement;
   const modal = document.getElementById(id);
@@ -333,142 +329,61 @@ function openCall(idx){
   openModal('callModal');
 }
 
-/* ---------- REGISTER FLOW (Telegram bot арқылы, тегін, дерекқорсыз) ---------- */
-let telegramPhone = "";
-const SESSION_KEY = "mb_session";
-function sessionToken(){ return localStorage.getItem(SESSION_KEY) || ''; }
-function apiFetch(url, options = {}){
+/* ---------- SUPABASE AUTH: Google OAuth ---------- */
+async function apiFetch(url, options = {}){
   const headers = { ...(options.headers || {}) };
-  const token = sessionToken();
+  const token = await authAccessToken();
   if(token) headers.Authorization = `Bearer ${token}`;
   return fetch(url, { ...options, headers });
 }
 
-async function verifyTelegramCode(){
-  const raw = document.getElementById('tgCodeInput').value.trim();
-  if(!raw){ showToast('Telegram-нан алған кодты қойыңыз'); return; }
-
-  const btn = document.getElementById('tgVerifyBtn');
-  if(btn){ btn.disabled = true; btn.textContent = 'Тексерілуде...'; }
-
+function showAuthStep(){
+  document.getElementById('authStep').classList.remove('step-hidden');
+  document.getElementById('profileSetupStep').classList.add('step-hidden');
+}
+function showProfileSetup(identity){
+  document.getElementById('authStep').classList.add('step-hidden');
+  document.getElementById('profileSetupStep').classList.remove('step-hidden');
+  const suggested=identity?.user_metadata?.full_name||identity?.user_metadata?.name||'';
+  if(suggested&&!document.getElementById('regName').value)document.getElementById('regName').value=suggested;
+}
+async function handleAuthenticatedUser(){
+  const identity=await getAuthIdentity(); if(!identity)return;
+  const r=await apiFetch('/api/user'), data=await r.json();
+  if(data.ok&&data.exists){
+    user={name:data.name,phone:data.phone,email:data.email,avatarUrl:data.avatar_url||null};
+    updateHeader(); closeModal('registerModal'); renderListings(); renderProducts(); showToast('Қош келдіңіз, '+data.name+'!');
+  }else showProfileSetup(identity);
+}
+async function finishProfileSetup(){
+  const name=document.getElementById('regName').value.trim(), phone=document.getElementById('regPhone').value.trim();
+  if(name.length<2){showToast('Аты-жөніңізді енгізіңіз');return;}
+  if(phone.replace(/\D/g,'').length<11){showToast('Телефон нөмірін толық енгізіңіз');return;}
   try{
-    const res = await fetch('/api/telegram-verify', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ token: raw })
-    });
-    const data = await res.json();
-    if(!data.ok){
-      showToast(data.message || 'Код қате');
-      return;
-    }
-    telegramPhone = data.phone;
-
-    // Бұл нөмір бұрын тіркелген бе, тексереміз — солай болса, аты-жөнін
-    // қайта сұрамай-ақ, бірден тіркелуді аяқтаймыз.
-    localStorage.setItem(SESSION_KEY, data.sessionToken);
-    const userRes = await apiFetch('/api/user');
-    const userData = await userRes.json();
-
-    if(userData.ok && userData.exists){
-      await completeLogin(telegramPhone, userData.name, userData.avatar_url, data.sessionToken);
-      showToast('Қайта келуіңізбен, ' + userData.name + '!');
-    } else {
-      document.getElementById('regStep1').classList.add('step-hidden');
-      document.getElementById('regStep2').classList.remove('step-hidden');
-      document.getElementById('tgVerifiedPhone').textContent = telegramPhone;
-      showToast('Telegram арқылы нөмір расталды!');
-    }
-  }catch(err){
-    showToast('Байланыс қатесі, қайталап көріңіз');
-  }finally{
-    if(btn){ btn.disabled = false; btn.textContent = 'Тексеру'; }
-  }
+    const r=await apiFetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone})});
+    const data=await r.json(); if(!r.ok||!data.ok){showToast(data.message||'Профиль сақталмады');return;}
+    user={name:data.name,phone:data.phone,email:data.email,avatarUrl:data.avatar_url||null};
+    updateHeader();closeModal('registerModal');renderListings();renderProducts();showToast('Профиль дайын!');
+  }catch{showToast('Байланыс қатесі');}
+}
+async function initializeAuth(){
+  consumeOAuthHash();
+  if(await getAuthIdentity()) await handleAuthenticatedUser();
 }
 
-async function finishRegister(){
-  const name = document.getElementById('regName').value.trim();
-  if(!name){ showToast('Аты-жөніңізді енгізіңіз'); return; }
-  if(!telegramPhone){ showToast('Алдымен Telegram арқылы нөміріңізді растаңыз'); return; }
-
-  try{
-    const res = await apiFetch('/api/user', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ name })
-    });
-    const data = await res.json();
-    if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
-
-    await completeLogin(telegramPhone, data.name);
-    showToast('Қош келдіңіз, ' + data.name + '!');
-  }catch(err){
-    showToast('Байланыс қатесі, қайталап көріңіз');
-  }
+async function logout(){
+  await signOutAuth(); user=null; closeModal('profileModal');
+  document.getElementById('headActions').innerHTML=`<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Кіру</button><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
+  showToast('Шықтыңыз');renderListings();renderProducts();
 }
-
-// Тіркелу/кіру сәтті болған соң: user күйін орнатып, ұзақ мерзімді
-// сессия токенін алып, localStorage-ке сақтайды (келесі жолы Telegram
-// арқылы қайта растаудың қажеті болмайды).
-async function completeLogin(phone, name, avatarUrl, token){
-  if(token) localStorage.setItem(SESSION_KEY, token);
-  user = { name, phone, avatarUrl: avatarUrl || null };
-  updateHeader();
-  closeModal('registerModal');
-  renderListings(); renderProducts();
-}
-
-async function restoreSession(){
-  const token = localStorage.getItem(SESSION_KEY);
-  if(!token) return;
-  try{
-    const res = await fetch('/api/session', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'verify', token })
-    });
-    const data = await res.json();
-    if(!data.ok){ localStorage.removeItem(SESSION_KEY); return; }
-    const userRes = await apiFetch('/api/user');
-    const userData = await userRes.json();
-    if(userData.ok && userData.exists){
-      user = { name: userData.name, phone: data.phone, avatarUrl: userData.avatar_url || null };
-      updateHeader();
-      renderListings(); renderProducts();
-    }
-  }catch(err){}
-}
-
-function logout(){
-  user = null;
-  localStorage.removeItem(SESSION_KEY);
-  closeModal('profileModal');
-  document.getElementById('headActions').innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
-    <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
-  showToast('Шықтыңыз');
-  renderListings(); renderProducts();
-}
-
-function switchAccount(){
-  user = null;
-  localStorage.removeItem(SESSION_KEY);
-  closeModal('profileModal');
-  document.getElementById('headActions').innerHTML = `<button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Тіркелу</button>
-    <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
-  openModal('registerModal');
-  renderListings(); renderProducts();
-}
-
-function avatarHTML(avatarUrl, initials){
-  return avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="">` : escapeHTML(initials);
-}
-
+async function switchAccount(){ await logout(); openModal('registerModal'); }
+function avatarHTML(avatarUrl, initials){ return avatarUrl ? `<img src="${escapeHTML(avatarUrl)}" alt="">` : escapeHTML(initials); }
 function updateHeader(){
-  const el = document.getElementById('headActions');
-  if(user){
-    const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-    el.innerHTML = `<div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl, initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div>
-      <button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
-  }
+  const el=document.getElementById('headActions'); if(!user)return;
+  const initials=user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
+  el.innerHTML=`<div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div>${escapeHTML(user.name.split(' ')[0])}</div><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
 }
+
 
 /* ---------- ТЕМА ---------- */
 const THEME_KEY = "mb_theme";
@@ -503,7 +418,7 @@ function openProfileModal(){
   const initials = user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
   document.getElementById('profileAvatarBox').innerHTML = avatarHTML(user.avatarUrl, initials);
   document.getElementById('profileName').textContent = user.name;
-  document.getElementById('profilePhone').textContent = user.phone;
+  document.getElementById('profilePhone').textContent = `${user.phone}${user.email ? ' · '+user.email : ''}`;
   const saved = localStorage.getItem(THEME_KEY) || 'light';
   document.getElementById('themeSwatchLight').classList.toggle('active', saved !== 'dark');
   document.getElementById('themeSwatchDark').classList.toggle('active', saved === 'dark');
@@ -618,8 +533,10 @@ function showToast(msg){
 
 /* ---------- INIT ---------- */
 initTheme();
+attachPhoneMask(document.getElementById('regPhone'));
+resetPhoneField('regPhone');
 renderCatbar();
 loadListings();
 loadUserProducts();
 renderProducts();
-restoreSession();
+initializeAuth();

@@ -3,6 +3,8 @@ create extension if not exists pgcrypto;
 
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid unique references auth.users(id) on delete cascade,
+  email text,
   phone text unique not null check (phone ~ '^\\+7[0-9]{10}$'),
   name text not null check (char_length(name) between 2 and 80),
   avatar_url text,
@@ -55,6 +57,8 @@ do $$ begin
   end if;
 end $$;
 
+create index if not exists users_auth_user_id_idx on users (auth_user_id);
+create index if not exists users_email_idx on users (email);
 create index if not exists listings_created_at_idx on listings (created_at desc);
 create index if not exists listings_type_created_at_idx on listings (type, created_at desc);
 create index if not exists listings_seller_phone_idx on listings (seller_phone);
