@@ -13,8 +13,8 @@
 <link rel="canonical" href="https://mal-bazary.vercel.app/">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260910-8">
-<link rel="stylesheet" href="css/landing.css?v=20260910-8">
+<link rel="stylesheet" href="css/style.css?v=20260910-9">
+<link rel="stylesheet" href="css/landing.css?v=20260910-9">
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("mb_theme")||"light"}catch(e){}</script>
 </head>
 <body class="landing-page">
@@ -42,7 +42,9 @@
   </div>
 </header>
 
-<section class="hero">
+<section class="hero" data-scroll-hero>
+  <div class="hero-haze hero-haze--far" aria-hidden="true"></div>
+  <div class="hero-haze hero-haze--near" aria-hidden="true"></div>
   <div class="hero-copy">
     <div class="eyebrow">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
@@ -63,13 +65,15 @@
   <div class="hero-photo-note"><span>Қазақстан табиғаты</span><b>Фермерлерге жақын, шынайы нарық</b></div>
 </section>
 
-<section id="maldar">
-  <div class="section-head">
-    <div class="section-eyebrow">Не сата аласың</div>
-    <h2>Жеті түрлі мал, бір алаңда</h2>
-    <p>Санат бойынша фильтрлеп, өз ауданыңдағы хабарландыруларды тез тап.</p>
-  </div>
-  <div class="cat-strip">
+<section id="maldar" class="market-gate" data-market-gate>
+  <div class="gate-stage">
+    <div class="gate-market">
+      <div class="section-head gate-market-head">
+        <div class="section-eyebrow">Не сата аласың</div>
+        <h2>Жеті түрлі мал, бір алаңда</h2>
+        <p>Санат бойынша фильтрлеп, өз ауданыңдағы хабарландыруларды тез тап.</p>
+      </div>
+      <div class="cat-strip">
     <a class="cat-pill" href="market.html" aria-label="Сиыр хабарландыруларын қарау"><img src="assets/home/cow.svg" alt="Сиыр" loading="lazy" width="640" height="640"><span>Сиыр</span></a>
     <a class="cat-pill" href="market.html" aria-label="Қой хабарландыруларын қарау"><img src="assets/home/sheep.svg" alt="Қой" loading="lazy" width="640" height="640"><span>Қой</span></a>
     <a class="cat-pill" href="market.html" aria-label="Жылқы хабарландыруларын қарау"><img src="assets/home/horse.svg" alt="Жылқы" loading="lazy" width="640" height="640"><span>Жылқы</span></a>
@@ -77,6 +81,12 @@
     <a class="cat-pill" href="market.html" aria-label="Қаз хабарландыруларын қарау"><img src="assets/home/goose.svg" alt="Қаз" loading="lazy" width="640" height="640"><span>Қаз</span></a>
     <a class="cat-pill" href="market.html" aria-label="Үйрек хабарландыруларын қарау"><img src="assets/home/duck.svg" alt="Үйрек" loading="lazy" width="640" height="640"><span>Үйрек</span></a>
     <a class="cat-pill" href="market.html" aria-label="Қоян хабарландыруларын қарау"><img src="assets/home/rabbit.svg" alt="Қоян" loading="lazy" width="640" height="640"><span>Қоян</span></a>
+      </div>
+    </div>
+    <div class="gate-door gate-door--left" aria-hidden="true"><span>МАЛ</span></div>
+    <div class="gate-door gate-door--right" aria-hidden="true"><span>БАЗАРЫ</span></div>
+    <div class="gate-seal" aria-hidden="true">МБ</div>
+    <p class="gate-line" aria-hidden="true">Қақпа ашылса, нарық көрінеді</p>
   </div>
 </section>
 
@@ -87,17 +97,17 @@
     <p>Тіркеліп, іздеп, сатушымен сөйлес — делдал жоқ, комиссия жоқ.</p>
   </div>
   <div class="steps">
-    <div class="step">
+    <div class="step" data-scroll-step>
       <img class="step-photo" src="assets/home/step-login.svg" alt="Фермер шаруашылықта" loading="lazy">
-      <div class="step-content"><div class="step-num">01</div><h3>Google арқылы кір</h3><p>Google аккаунтыңмен қауіпсіз кіресің — бөлек құпиясөз қажет емес.</p></div>
+      <div class="step-content"><div class="step-kicker">Кіру</div><h3>Google арқылы кір</h3><p>Google аккаунтыңмен қауіпсіз кіресің — бөлек құпиясөз қажет емес.</p></div>
     </div>
-    <div class="step">
+    <div class="step" data-scroll-step>
       <img class="step-photo" src="assets/home/cow.svg" alt="Жайылымдағы сиырлар" loading="lazy">
-      <div class="step-content"><div class="step-num">02</div><h3>Хабарландыру тап немесе бер</h3><p>Санат бойынша малды іздейсің, немесе өз малыңды/өніміңді өзің жариялайсың.</p></div>
+      <div class="step-content"><div class="step-kicker">Іздеу</div><h3>Хабарландыру тап немесе бер</h3><p>Санат бойынша малды іздейсің, немесе өз малыңды/өніміңді өзің жариялайсың.</p></div>
     </div>
-    <div class="step">
+    <div class="step" data-scroll-step>
       <img class="step-photo" src="assets/home/step-chat.svg" alt="Сатушы мен сатып алушының саудасы" loading="lazy">
-      <div class="step-content"><div class="step-num">03</div><h3>Қоңырау шал немесе хат жаз</h3><p>Сатушымен телефон арқылы немесе сайт ішіндегі қауіпсіз жеке чатта сөйлесесің.</p></div>
+      <div class="step-content"><div class="step-kicker">Келісу</div><h3>Қоңырау шал немесе хат жаз</h3><p>Сатушымен телефон арқылы немесе сайт ішіндегі қауіпсіз жеке чатта сөйлесесің.</p></div>
     </div>
   </div>
 </section>
@@ -128,6 +138,6 @@
   </div>
 </footer>
 
-<script src="js/effects.js?v=20260910-8"></script>
+<script src="js/effects.js?v=20260910-9"></script>
 </body>
 </html>
