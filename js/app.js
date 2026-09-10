@@ -93,14 +93,14 @@ function normalizeListing(row){
     id: row.id, type: row.type, title: row.title, desc: row.description || '',
     price: row.price, loc: row.location, seller: row.seller_name, phone: row.seller_phone,
     avatar: row.seller_avatar || null, images: Array.isArray(row.images) ? row.images : [],
-    status: row.status || 'active', createdAt: row.created_at, updatedAt: row.updated_at
+    status: row.status || 'active', createdAt: row.created_at, updatedAt: row.updated_at, sellerAuthId: row.seller_auth_id || null, sellerVerified: Boolean(row.seller_verified), sellerShopName: row.seller_shop_name || '', sellerRating: Number(row.seller_rating || 0), sellerReviewCount: Number(row.seller_review_count || 0), animalDetails: row.animal_details || {}
   };
 }
 function normalizeProduct(row){
   return {
     id: row.id, tag: row.category, tagText: tagLabels[row.category] || '', name: row.name,
     desc: row.description || '', price: row.price, loc: row.location,
-    seller: row.seller_name, phone: row.seller_phone, avatar: row.seller_avatar || null,
+    seller: row.seller_name, phone: row.seller_phone, avatar: row.seller_avatar || null, sellerAuthId: row.seller_auth_id || null, sellerVerified: Boolean(row.seller_verified), sellerShopName: row.seller_shop_name || '', sellerRating: Number(row.seller_rating || 0), sellerReviewCount: Number(row.seller_review_count || 0),
     images: Array.isArray(row.images) ? row.images : [], createdAt: row.created_at
   };
 }
@@ -210,6 +210,10 @@ function renderListings(){
   let filtered = activeCat==="Барлығы" ? listings.slice() : listings.filter(l=>l.type===activeCat);
   if(searchQuery) filtered=filtered.filter(l=>l.title.toLowerCase().includes(searchQuery)||(l.desc&&l.desc.toLowerCase().includes(searchQuery))||l.loc.toLowerCase().includes(searchQuery));
   if(favoritesOnly) filtered=filtered.filter(l=>isFavorite(l.id));
+  if(typeof filterLocation!=='undefined'&&filterLocation)filtered=filtered.filter(l=>l.loc.toLowerCase().includes(filterLocation));
+  if(typeof filterMin!=='undefined'&&filterMin)filtered=filtered.filter(l=>Number(l.price)>=filterMin);
+  if(typeof filterMax!=='undefined'&&filterMax)filtered=filtered.filter(l=>Number(l.price)<=filterMax);
+  if(typeof filterVerified!=='undefined'&&filterVerified)filtered=filtered.filter(l=>l.sellerVerified);
   if(sortMode==="price-asc")filtered.sort((a,b)=>Number(a.price)-Number(b.price));
   else if(sortMode==="price-desc")filtered.sort((a,b)=>Number(b.price)-Number(a.price));
   else filtered.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
@@ -223,7 +227,7 @@ function renderListings(){
       <div class="row-icon" style="background:${catColors[l.type]}18;">${visual}</div>
       <div class="row-body">
         <div class="row-title">${escapeHTML(l.title)}${isNewItem(l.createdAt)?'<span class="badge-new">Жаңа</span>':''}${isSold?'<span class="badge-sold">Сатылды</span>':''}</div>
-        <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><span>${l.avatar?`<img src="${escapeHTML(l.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">`:'👤 '}${escapeHTML(l.seller)}</span>${l.images?.length?`<span>📷 ${l.images.length}</span>`:''}</div>
+        <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><button class="seller-link" onclick="openSeller('${l.sellerAuthId||''}')">${l.avatar?`<img src="${escapeHTML(l.avatar)}" alt="">`:'👤'} ${escapeHTML(l.sellerShopName||l.seller)} ${l.sellerVerified?'✓':''} ${l.sellerRating?`⭐ ${l.sellerRating}`:''}</button>${l.images?.length?`<span>📷 ${l.images.length}</span>`:''}</div><div class="animal-facts">${Object.entries(l.animalDetails||{}).filter(([,v])=>v).map(([k,v])=>`<span>${{breed:'Тұқым',age:'Жасы',weight:'Салмағы',health:'Денсаулық',documents:'Құжат'}[k]||k}: ${escapeHTML(v)}</span>`).join('')}</div>
       </div>
       <div class="row-actions">
         <div class="owner-actions">
@@ -231,12 +235,13 @@ function renderListings(){
           ${canManage?`<button class="icon-btn" onclick="editListing('${l.id}')" title="Өңдеу">✏️</button><button class="icon-btn icon-btn-wide" onclick="toggleListingStatus('${l.id}','${isSold?'active':'sold'}')">${isSold?'Қайта ашу':'Сатылды'}</button><button class="icon-btn" onclick="deleteListing('${l.id}')" title="Өшіру">🗑</button>`:''}
         </div>
         <div class="row-price">${Number(l.price).toLocaleString('ru-RU')} ₸</div>
-        ${isSold?'<span class="modal-note">Сатылым жабық</span>':`<button class="btn btn-sky btn-small" onclick="openCallById('${l.id}')">📞 Қоңырау шалу</button>`}
+        ${isSold?`${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="leaveReview('${l.id}')">⭐ Пікір</button>`:'<span class="modal-note">Сатылым жабық</span>'}`:`<div class="buyer-actions"><button class="btn btn-sky btn-small" onclick="openCallById('${l.id}')">📞 Қоңырау</button>${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="startChat('${l.id}')">💬 Хат</button><button class="btn btn-ghost btn-small" onclick="makeOffer('${l.id}',${Number(l.price)})">💰 Ұсыныс</button><button class="btn btn-ghost btn-small" onclick="reserveListing('${l.id}')">🔒 Бронь</button>`:''}</div>`}
       </div>
     </div>`;
   }).join('');
 }
-function openCallById(id){const l=listings.find(x=>String(x.id)===String(id));if(!l)return;document.getElementById('callNumber').textContent=l.phone;document.getElementById('callSeller').textContent='Сатушы: '+l.seller+' — '+l.title;document.getElementById('callLink').href='tel:'+l.phone.replace(/\s/g,'');openModal('callModal');}
+let activeCallListingId=null;
+function openCallById(id){activeCallListingId=id;const l=listings.find(x=>String(x.id)===String(id));if(!l)return;document.getElementById('callNumber').textContent=l.phone;document.getElementById('callSeller').textContent='Сатушы: '+l.seller+' — '+l.title;document.getElementById('callLink').href='tel:'+l.phone.replace(/\s/g,'');openModal('callModal');}
 function openGallery(id){
   const l=listings.find(x=>String(x.id)===String(id));if(!l?.images?.length)return;
   document.getElementById('galleryTitle').textContent=l.title;
@@ -283,7 +288,7 @@ function clearProductImages(){selectedProductFiles=[];document.getElementById('p
 function editListing(id){
   const l=listings.find(x=>String(x.id)===String(id));if(!l)return;
   editingListingId=l.id;selectedListingFiles=[];existingListingImages=[...(l.images||[])];setPostKind('animal');openModal('postModal');
-  document.getElementById('postKindSeg').style.display='none';document.getElementById('postType').value=l.type;document.getElementById('postTitle').value=l.title;document.getElementById('postDesc').value=l.desc;document.getElementById('postPrice').value=l.price;document.getElementById('postLoc').value=l.loc;document.getElementById('postSubmitBtn').textContent='Өзгерісті сақтау';renderListingImagePreview();
+  document.getElementById('postKindSeg').style.display='none';document.getElementById('postType').value=l.type;document.getElementById('postTitle').value=l.title;document.getElementById('postDesc').value=l.desc;document.getElementById('postPrice').value=l.price;document.getElementById('postLoc').value=l.loc;document.getElementById('postBreed').value=l.animalDetails?.breed||'';document.getElementById('postAge').value=l.animalDetails?.age||'';document.getElementById('postWeight').value=l.animalDetails?.weight||'';document.getElementById('postHealth').value=l.animalDetails?.health||'';document.getElementById('postDocuments').value=l.animalDetails?.documents||'';document.getElementById('postSubmitBtn').textContent='Өзгерісті сақтау';renderListingImagePreview();
 }
 async function toggleListingStatus(id,status){
   try{const r=await apiFetch('/api/update-post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status})});const data=await r.json();if(!r.ok||!data.ok){showToast(data.message||'Статус өзгермеді');return;}await loadListings();showToast(status==='sold'?'Сатылды деп белгіленді':'Хабарландыру қайта ашылды');}catch{showToast('Байланыс қатесі');}
@@ -344,7 +349,7 @@ let lastFocusedElement = null;
 function openModal(id){
   if(id==='postModal' && !user){ closeModal('postModal'); openModal('registerModal'); showToast('Алдымен тіркелу қажет'); return; }
   if(id==='postModal' && !editingListingId){
-    ['postTitle','postDesc','postPrice','postLoc','prodTitle','prodDesc','prodPrice','prodLoc'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+    ['postTitle','postDesc','postPrice','postLoc','postBreed','postAge','postWeight','postHealth','postDocuments','prodTitle','prodDesc','prodPrice','prodLoc'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
     selectedListingFiles=[];existingListingImages=[];selectedProductFiles=[];document.getElementById('listingImageInput').value='';document.getElementById('productImageInput').value='';renderProductImagePreview();document.getElementById('postKindSeg').style.display='flex';document.getElementById('postSubmitBtn').textContent='Жариялау';renderListingImagePreview();setPostKind('animal');
   }
   if(id==='registerModal'){
@@ -388,7 +393,7 @@ async function handleAuthenticatedUser(){
   const identity=await getAuthIdentity(); if(!identity)return;
   const r=await apiFetch('/api/user'), data=await r.json();
   if(data.ok&&data.exists){
-    user={name:data.name,phone:data.phone,email:data.email,role:data.role||'user',avatarUrl:data.avatar_url||null};
+    user={name:data.name,phone:data.phone,email:data.email,role:data.role||'user',avatarUrl:data.avatar_url||null,shopName:data.shop_name||'',bio:data.bio||'',verified:Boolean(data.verified)};
     updateHeader(); closeModal('registerModal'); renderListings(); renderProducts(); showToast('Қош келдіңіз, '+data.name+'!');
   }else showProfileSetup(identity);
 }
@@ -399,7 +404,7 @@ async function finishProfileSetup(){
   try{
     const r=await apiFetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone})});
     const data=await r.json(); if(!r.ok||!data.ok){showToast(data.message||'Профиль сақталмады');return;}
-    user={name:data.name,phone:data.phone,email:data.email,role:data.role||'user',avatarUrl:data.avatar_url||null};
+    user={name:data.name,phone:data.phone,email:data.email,role:data.role||'user',avatarUrl:data.avatar_url||null,shopName:data.shop_name||'',bio:data.bio||'',verified:Boolean(data.verified)};
     updateHeader();closeModal('registerModal');renderListings();renderProducts();showToast('Профиль дайын!');
   }catch{showToast('Байланыс қатесі');}
 }
@@ -418,7 +423,7 @@ function avatarHTML(avatarUrl, initials){ return avatarUrl ? `<img src="${escape
 function updateHeader(){
   const el=document.getElementById('headActions'); if(!user)return;
   const initials=user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()">❓ <span class="help-label">Көмек</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div>${escapeHTML(user.name.split(' ')[0])}${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
+  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small inbox-btn" onclick="openInbox()">💬 <span class="help-label">Чат</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div>${escapeHTML(user.name.split(' ')[0])}${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
 }
 
 
@@ -528,7 +533,7 @@ async function submitPost(){
       const isEdit=Boolean(editingListingId);
       const res=await apiFetch(isEdit?'/api/update-post':'/api/create-post',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({kind:'listing',id:editingListingId,type,title,description:desc,price,location:loc,images})
+        body:JSON.stringify({kind:'listing',id:editingListingId,type,title,description:desc,price,location:loc,images,animal_details:{breed:document.getElementById('postBreed').value.trim(),age:document.getElementById('postAge').value.trim(),weight:document.getElementById('postWeight').value.trim(),health:document.getElementById('postHealth').value.trim(),documents:document.getElementById('postDocuments').value.trim()}})
       });
       const data=await res.json();
       if(!res.ok||!data.ok){showToast(data.message||'Қате шықты');return;}

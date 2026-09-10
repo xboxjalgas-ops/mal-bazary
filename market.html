@@ -7,7 +7,7 @@
 <meta name="description" content="Қазақстандағы мал және мал шаруашылығы өнімдерінің хабарландырулары.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=20260910-3">
+<link rel="stylesheet" href="css/style.css?v=20260910-5">
 </head>
 <body>
 
@@ -50,6 +50,14 @@
         <option value="price-desc">Баға: қымбаттан</option>
       </select>
       <button class="chip" id="favToggleBtn" onclick="toggleFavoritesOnly()">☆ Таңдаулылар</button>
+      <button class="chip" onclick="toggleAdvancedFilters()">⚙ Сүзгі</button>
+    </div>
+    <div class="advanced-filters" id="advancedFilters" hidden>
+      <input id="filterLocation" placeholder="📍 Қала/аудан" oninput="applyAdvancedFilters()">
+      <input id="filterMinPrice" type="number" min="0" placeholder="Мин. баға" oninput="applyAdvancedFilters()">
+      <input id="filterMaxPrice" type="number" min="0" placeholder="Макс. баға" oninput="applyAdvancedFilters()">
+      <label><input id="filterVerified" type="checkbox" onchange="applyAdvancedFilters()"> ✓ Тексерілген сатушы</label>
+      <button class="btn btn-ghost btn-small" onclick="resetAdvancedFilters()">Тазалау</button>
     </div>
     <div class="section-title" id="listCount">Барлық хабарландырулар</div>
     <div class="list" id="listingsList"></div>
@@ -108,6 +116,13 @@
         <label for="postLoc">Орналасқан жері</label>
         <input id="postLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
       </div>
+      <div class="details-grid">
+        <div class="field"><label for="postBreed">Тұқымы</label><input id="postBreed" maxlength="80" placeholder="Мыс: Әулиекөл"></div>
+        <div class="field"><label for="postAge">Жасы</label><input id="postAge" maxlength="50" placeholder="Мыс: 3 жас"></div>
+        <div class="field"><label for="postWeight">Салмағы</label><input id="postWeight" maxlength="50" placeholder="Мыс: 450 кг"></div>
+        <div class="field"><label for="postHealth">Денсаулығы</label><input id="postHealth" maxlength="120" placeholder="Екпелері жасалған"></div>
+      </div>
+      <div class="field"><label for="postDocuments">Құжаттары</label><textarea id="postDocuments" maxlength="300" placeholder="Ветпаспорт, сырға нөмірі, анықтамалар"></textarea></div>
       <div class="field">
         <label for="listingImageInput">Суреттер (8-ге дейін)</label>
         <label class="upload-box" for="listingImageInput">📷 Суреттерді таңдау</label>
@@ -197,7 +212,8 @@
       <div class="seller" id="callSeller">Сатушы: —</div>
     </div>
     <a class="btn btn-primary full-btn" id="callLink" href="#" style="text-decoration:none;justify-content:center;">📞 Қазір қоңырау шалу</a>
-    <p class="modal-note">Сатып алушы мен сатушы арасындағы байланыс тек қоңырау арқылы жүзеге асады — хат-хабар жоқ, тікелей сөйлесесіз.</p>
+    <button class="btn btn-ghost full-btn" id="callChatBtn" onclick="closeModal('callModal');startChat(activeCallListingId)">💬 Сатушыға хат жазу</button>
+    <p class="modal-note">Сатушымен телефон арқылы немесе сайт ішіндегі қауіпсіз жеке чатта сөйлесе аласыз.</p>
   </div>
 </div>
 
@@ -232,6 +248,10 @@
   </div>
 </div>
 
+<!-- PRIVATE CHAT / TRADE CENTER -->
+<div class="overlay" role="dialog" aria-modal="true" id="inboxModal"><div class="modal community-modal"><div class="modal-head"><h2>💬 Сауда орталығы</h2><button class="modal-close" onclick="closeModal('inboxModal')">✕</button></div><div class="community-tabs"><button class="chip active" onclick="showCommunityTab('chats',this)">Чаттар</button><button class="chip" onclick="showCommunityTab('offers',this)">Ұсыныстар</button><button class="chip" onclick="showCommunityTab('reservations',this)">Броньдар</button></div><div id="communityContent"></div></div></div>
+<div class="overlay" role="dialog" aria-modal="true" id="chatModal"><div class="modal chat-modal"><div class="modal-head"><h2 id="chatTitle">Жеке чат</h2><button class="modal-close" onclick="closeChat()">✕</button></div><div id="chatMessages" class="chat-messages"></div><div class="chat-compose"><textarea id="chatInput" maxlength="1500" placeholder="Хабарлама жазыңыз..."></textarea><button class="btn btn-primary" onclick="sendChatMessage()">Жіберу</button></div></div></div>
+<div class="overlay" role="dialog" aria-modal="true" id="sellerModal"><div class="modal seller-modal"><div class="modal-head"><h2>Сатушы профилі</h2><button class="modal-close" onclick="closeModal('sellerModal')">✕</button></div><div id="sellerProfileContent"></div></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 
 <!-- PROFILE / SETTINGS MODAL -->
@@ -264,6 +284,13 @@
       </div>
     </div>
 
+    <div class="seller-shop-settings">
+      <h3 class="support-heading">Сатушы дүкені</h3>
+      <div class="field"><label for="shopName">Дүкен атауы</label><input id="shopName" maxlength="80" placeholder="Мыс: Xbox мал шаруашылығы"></div>
+      <div class="field"><label for="shopBio">Сатушы туралы</label><textarea id="shopBio" maxlength="500" placeholder="Шаруашылығыңыз бен тауарларыңыз туралы"></textarea></div>
+      <button class="btn btn-ghost full-btn" onclick="saveShopProfile()">Дүкен профилін сақтау</button>
+    </div>
+
     <div class="admin-panel" id="adminPanel" style="display:none;">
       <div class="admin-badge">🛡 Администратор</div>
       <p class="modal-note">Сіз барлық мал және өнім хабарландыруларын өңдеп, жаба немесе өшіре аласыз.</p>
@@ -276,7 +303,8 @@
   </div>
 </div>
 
-<script src="js/auth.js?v=20260910-3"></script>
-<script src="js/app.js?v=20260910-3"></script>
+<script src="js/auth.js?v=20260910-5"></script>
+<script src="js/app.js?v=20260910-5"></script>
+<script src="js/marketplace.js?v=20260910-5"></script>
 </body>
 </html>

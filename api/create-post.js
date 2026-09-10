@@ -1,41 +1,9 @@
 const { requireAuth, noStore } = require('../lib/auth');
-const ALLOWED_TYPES = ['Сиыр', 'Қой', 'Жылқы', 'Тауық', 'Қаз', 'Үйрек', 'Қоян'];
-const ALLOWED_TAGS = ['tag-good', 'tag-budget', 'tag-med', 'tag-coop'];
-const headers = extra => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
-const bad = (res, message) => res.status(400).json({ ok: false, message });
-const validImages=images=>Array.isArray(images)&&images.length<=8&&images.every(x=>typeof x==='string'&&x.length<700&&x.startsWith(`${process.env.SUPABASE_URL}/storage/v1/object/public/listing-images/`));
-module.exports = async (req, res) => {
-  noStore(res);
-  if (req.method !== 'POST') return res.status(405).json({ ok: false, message: 'Method not allowed' });
-  const authUser = await requireAuth(req, res); if (!authUser) return;
-  const body = req.body || {}, kind = body.kind;
-  if (!['listing','product'].includes(kind)) return bad(res, 'Жарияланым түрі қате');
-  const location = String(body.location || '').trim(), description = String(body.description || '').trim();
-  if (!location || location.length > 120) return bad(res, 'Орналасқан жері қате');
-  if (description.length > 1500) return bad(res, 'Сипаттама тым ұзын');
-  try {
-    const ur = await fetch(`${process.env.SUPABASE_URL}/rest/v1/users?select=name,phone,avatar_url&auth_user_id=eq.${authUser.id}&limit=1`, { headers: headers() });
-    if (!ur.ok) return res.status(502).json({ ok:false, message:'Дерекқор қатесі' });
-    const users = await ur.json();
-    if (!users.length) return res.status(403).json({ ok:false, message:'Алдымен профильді толтырыңыз' });
-    const seller = users[0]; let table, record;
-    if (kind === 'listing') {
-      const type=String(body.type||'').trim(), title=String(body.title||'').trim(), price=Number(body.price);
-      if (!ALLOWED_TYPES.includes(type)) return bad(res,'Мал түрі қате');
-      if (title.length<3 || title.length>120) return bad(res,'Атауы 3–120 таңба болуы керек');
-      if (!Number.isFinite(price)||price<=0||price>1_000_000_000) return bad(res,'Баға қате');
-      const images=body.images||[]; if(!validImages(images))return bad(res,'Суреттер тізімі қате');
-      table='listings'; record={type,title,description,price,location,images,status:'active',seller_name:seller.name,seller_phone:seller.phone,seller_avatar:seller.avatar_url||null};
-    } else {
-      const category=String(body.category||'').trim(), name=String(body.name||'').trim(), price=String(body.price||'').trim();
-      if (!ALLOWED_TAGS.includes(category)) return bad(res,'Санат қате');
-      if (name.length<3 || name.length>120) return bad(res,'Атауы 3–120 таңба болуы керек');
-      if (!price || price.length>60) return bad(res,'Баға қате');
-      const images=body.images||[]; if(!validImages(images))return bad(res,'Суреттер тізімі қате');
-      table='products'; record={category,name,description,price,location,images,seller_name:seller.name,seller_phone:seller.phone,seller_avatar:seller.avatar_url||null};
-    }
-    const r=await fetch(`${process.env.SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:headers({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify([record])});
-    if(!r.ok)return res.status(502).json({ok:false,message:'Дерекқорға жазу қатесі'});
-    const data=await r.json(); return res.status(201).json({ok:true,[kind]:data[0]});
-  } catch { return res.status(500).json({ok:false,message:'Серверде қате'}); }
-};
+const TYPES=['Сиыр','Қой','Жылқы','Тауық','Қаз','Үйрек','Қоян'],TAGS=['tag-good','tag-budget','tag-med','tag-coop'];
+const H=e=>({apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,...e});
+const validImages=a=>Array.isArray(a)&&a.length<=8&&a.every(x=>typeof x==='string'&&x.length<700&&x.startsWith(`${process.env.SUPABASE_URL}/storage/v1/object/public/listing-images/`));
+module.exports=async(req,res)=>{noStore(res);if(req.method!=='POST')return res.status(405).json({ok:false});const a=await requireAuth(req,res);if(!a)return;const b=req.body||{},kind=b.kind,loc=String(b.location||'').trim(),desc=String(b.description||'').trim();if(!['listing','product'].includes(kind)||loc.length<2||loc.length>120||desc.length>1500)return res.status(400).json({ok:false,message:'Деректер қате'});
+try{const ur=await fetch(`${process.env.SUPABASE_URL}/rest/v1/users?select=name,phone,avatar_url&auth_user_id=eq.${a.id}&limit=1`,{headers:H()});const us=ur.ok?await ur.json():[];if(!us.length)return res.status(403).json({ok:false,message:'Алдымен профильді толтырыңыз'});const u=us[0],images=b.images||[];if(!validImages(images))return res.status(400).json({ok:false,message:'Суреттер тізімі қате'});let table,record;
+if(kind==='listing'){const type=String(b.type||''),title=String(b.title||'').trim(),price=Number(b.price),d=b.animal_details||{};if(!TYPES.includes(type)||title.length<3||title.length>120||!Number.isFinite(price)||price<=0||price>1e9)return res.status(400).json({ok:false,message:'Хабарландыру деректері қате'});const details={breed:String(d.breed||'').slice(0,80),age:String(d.age||'').slice(0,50),weight:String(d.weight||'').slice(0,50),health:String(d.health||'').slice(0,120),documents:String(d.documents||'').slice(0,300)};table='listings';record={type,title,description:desc,price,location:loc,images,status:'active',animal_details:details,seller_auth_id:a.id,seller_name:u.name,seller_phone:u.phone,seller_avatar:u.avatar_url||null};}
+else{const category=String(b.category||''),name=String(b.name||'').trim(),price=String(b.price||'').trim();if(!TAGS.includes(category)||name.length<3||name.length>120||!price||price.length>60)return res.status(400).json({ok:false,message:'Өнім деректері қате'});table='products';record={category,name,description:desc,price,location:loc,images,seller_auth_id:a.id,seller_name:u.name,seller_phone:u.phone,seller_avatar:u.avatar_url||null};}
+const r=await fetch(`${process.env.SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:H({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify([record])});if(!r.ok)return res.status(502).json({ok:false,message:'Дерекқорға жазу қатесі'});return res.status(201).json({ok:true,[kind]:(await r.json())[0]});}catch{return res.status(500).json({ok:false,message:'Серверде қате'});}};

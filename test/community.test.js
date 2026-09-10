@@ -1,0 +1,5 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+const root=path.join(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+test('marketplace UI has required unique controls',()=>{const h=read('market.html');for(const id of ['advancedFilters','inboxModal','chatModal','sellerModal','postBreed','postDocuments','shopName'])assert.equal((h.match(new RegExp(`id="${id}"`,'g'))||[]).length,1,id);assert.match(h,/marketplace\.js\?v=/);});
+test('community migration includes eight selected capabilities',()=>{const s=read('supabase-community.sql');for(const term of ['conversations','messages','offers','verified','shop_name','reviews','animal_details','reservations'])assert.match(s,new RegExp(term));});
+test('community API protects membership and validates text',()=>{const s=read('api/community.js');assert.match(s,/requireAuth/);assert.match(s,/conversation\(cid,auth\.id\)/);assert.match(s,/body\.length<1\|\|body\.length>1500/);assert.doesNotMatch(s,/service_role_[A-Za-z0-9_-]+/);});
