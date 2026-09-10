@@ -2,62 +2,49 @@
 
 Қазақстан фермерлеріне арналған мал және мал шаруашылығы өнімдерінің онлайн-нарығы.
 
-## Мүмкіндіктер
+## Негізгі мүмкіндіктер
 
-- Мал және өнім хабарландыруларын қарау, іздеу, сүзу және сұрыптау
-- Telegram арқылы телефонды растау
-- Қол қойылған 30 күндік сессия
-- Тек расталған иесінің хабарландыру қосуы және өшіруі
+- Google арқылы қауіпсіз кіру (Supabase Auth)
+- Мал және өнім хабарландыруларын жариялау, іздеу, сұрыптау және өшіру
+- Телефон арқылы сатушымен тікелей байланысу
 - Таңдаулылар, қараңғы режим және профиль аватары
-- Supabase дерекқоры мен Storage
+- Supabase Database және Storage
 
 ## Архитектура
 
 - `index.html` — таныстыру беті
-- `market.html`, `js/app.js`, `css/` — нарық интерфейсі
+- `market.html`, `js/app.js`, `js/auth.js`, `css/` — интерфейс және Supabase Auth клиенті
 - `api/` — Vercel serverless API
-- `lib/auth.js` — телефонды қалыптандыру және HMAC сессиясын тексеру
+- `lib/auth.js` — Supabase access token-ін сервер жағында тексеру
 - `supabase-schema.sql` — жаңа Supabase жобасының схемасы
-- `supabase-migration.sql` — бар базаға қауіпсіз индекстер
+- `supabase-migration.sql` — жұмыс істеп тұрған базаға Auth бағандары мен индекстер
 - `vercel.json` — қауіпсіздік HTTP header-лері
 
-## Міндетті environment variables
+## Supabase баптауы
 
-Vercel → Project → Settings → Environment Variables:
+1. Жаңа жоба болса `supabase-schema.sql` орындаңыз.
+2. Бұрыннан жұмыс істейтін база болса `supabase-migration.sql` орындаңыз.
+3. Authentication → URL Configuration:
+   - Site URL: `https://mal-bazary.vercel.app`
+   - Redirect URL: `https://mal-bazary.vercel.app/market.html`
+4. Authentication → Providers → Google ішінде Google OAuth Client ID және Secret орнатып, provider-ді қосыңыз.
+
+## Vercel environment variables
 
 ```text
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
-TELEGRAM_BOT_TOKEN
-OTP_SECRET
-TELEGRAM_WEBHOOK_SECRET
 ```
 
-`OTP_SECRET` кемінде 32 таңбалық кездейсоқ құпия болуы керек. `TELEGRAM_WEBHOOK_SECRET` үшін тек `A-Z`, `a-z`, `0-9`, `_`, `-` таңбаларын қолданыңыз. Құпия мәндерді GitHub-қа жүктемеңіз.
+`SUPABASE_SERVICE_ROLE_KEY` тек серверде сақталады. Frontend-тегі `sb_publishable_...` кілт — Supabase браузерде қолдануға арнайы шығарған ашық publishable key.
 
-## Supabase
+## Қауіпсіздік үлгісі
 
-Жаңа жоба үшін `supabase-schema.sql` файлын SQL Editor-де бір рет орындаңыз. Бұрыннан жұмыс істеп тұрған база үшін `supabase-migration.sql` файлын орындаңыз; ол деректерді өзгертпей, қажет индекстерді қосады.
+Frontend Google OAuth арқылы Supabase access token алады. Әрбір профиль, жариялау, өшіру және аватар сұрауы Bearer token-мен жіберіледі. API токенді Supabase Auth арқылы тексеріп, қолданушыны `auth_user_id` бойынша анықтайды. Сатушының аты мен телефоны request body-ден алынбайды.
 
-## Telegram webhook
-
-Deploy аяқталғаннан кейін webhook-ті secret token-мен орнатыңыз:
-
-```text
-https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://mal-bazary.vercel.app/api/telegram-webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>
-```
-
-Webhook secret орнатылмайынша сервер Telegram update-терін қабылдамайды.
-
-## Жергілікті тексеру
+## Тексеру
 
 ```bash
 npm test
 npm run check
 ```
-
-## Қауіпсіздік үлгісі
-
-Telegram коды расталғанда ғана сервер сессия токенін береді. Жариялау, өшіру, профильді оқу/өзгерту және аватар жүктеу сұраулары `Authorization: Bearer <token>` арқылы тексеріледі. Сервер сатушының аты мен телефонын request body-ден алмайды — олар расталған сессия мен `users` кестесінен алынады.
-
-Service-role кілті тек серверде қолданылады. Клиенттен Supabase-ке жазу RLS арқылы жабық.
