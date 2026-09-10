@@ -1,12 +1,5 @@
 {
-  "name": "mal-bazary",
-  "private": true,
-  "description": "Мал Базары — фермерлерге арналған онлайн-нарық",
-  "scripts": {
-    "test": "node --test",
-    "check": "node --check js/app.js && node --test"
-  },
-  "dependencies": {
-    "@netlify/blobs": "^8.1.0"
-  }
+  "name":"mal-bazary","private":true,"description":"Мал Базары — фермерлерге арналған онлайн-нарық",
+  "scripts":{"test":"node --test","check":"node --check js/app.js && node --check js/marketplace.js && node --check api/community.js && node --check api/create-post.js && node --check api/update-post.js && node --check api/get-data.js && node --test"},
+  "dependencies":{"@netlify/blobs":"^8.1.0"}
 }

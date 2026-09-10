@@ -15,7 +15,7 @@ module.exports=async(req,res)=>{
    const title=String(b.title||'').trim(),description=String(b.description||'').trim(),location=String(b.location||'').trim(),type=String(b.type||''),price=Number(b.price);
    if(title.length<3||title.length>120||description.length>1500||location.length<2||location.length>120||!TYPES.includes(type)||!Number.isFinite(price)||price<=0||price>1_000_000_000)return res.status(400).json({ok:false,message:'Хабарландыру деректері қате'});
    if(!validImages(b.images||[]))return res.status(400).json({ok:false,message:'Суреттер тізімі қате'});
-   Object.assign(patch,{title,description,location,type,price,images:b.images||[]});
+   const d=b.animal_details||{};const animal_details={breed:String(d.breed||'').slice(0,80),age:String(d.age||'').slice(0,50),weight:String(d.weight||'').slice(0,50),health:String(d.health||'').slice(0,120),documents:String(d.documents||'').slice(0,300)};Object.assign(patch,{title,description,location,type,price,images:b.images||[],animal_details});
   }
   if(Object.keys(patch).length===1)return res.status(400).json({ok:false,message:'Өзгеріс жоқ'});
   const isAdmin=users[0].role==='admin'||isAdminEmail(authUser.email);
