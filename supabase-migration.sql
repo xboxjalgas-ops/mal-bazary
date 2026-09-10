@@ -26,3 +26,8 @@ do $$ begin
     create policy "Public read listing images" on storage.objects for select using (bucket_id = 'listing-images');
   end if;
 end $$;
+
+-- Admin role and product images.
+alter table users add column if not exists role text not null default 'user';
+update users set role='admin' where lower(email)='xboxjalgas@gmail.com';
+alter table products add column if not exists images jsonb not null default '[]'::jsonb;

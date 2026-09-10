@@ -142,6 +142,13 @@
         <label for="prodLoc">Орналасқан жері</label>
         <input id="prodLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
       </div>
+      <div class="field">
+        <label for="productImageInput">Өнім суреттері (8-ге дейін)</label>
+        <label class="upload-box" for="productImageInput">📷 Суреттерді таңдау</label>
+        <input type="file" id="productImageInput" accept="image/jpeg,image/png,image/webp" multiple hidden onchange="handleProductImages(event)">
+        <div class="image-preview-grid" id="productImagePreview"></div>
+        <button type="button" class="btn btn-ghost btn-small clear-images-btn" id="clearProductImagesBtn" onclick="clearProductImages()" style="display:none;">Суреттерді тазалау</button>
+      </div>
     </div>
 
     <button class="btn btn-primary full-btn" id="postSubmitBtn" onclick="submitPost()">Жариялау</button>
@@ -232,6 +239,11 @@
           <span>🌙 Түнгі аспан</span>
         </div>
       </div>
+    </div>
+
+    <div class="admin-panel" id="adminPanel" style="display:none;">
+      <div class="admin-badge">🛡 Администратор</div>
+      <p class="modal-note">Сіз барлық мал және өнім хабарландыруларын өңдеп, жаба немесе өшіре аласыз.</p>
     </div>
 
     <div class="profile-actions">

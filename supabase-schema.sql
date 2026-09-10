@@ -8,6 +8,7 @@ create table if not exists users (
   phone text unique not null check (phone ~ '^\\+7[0-9]{10}$'),
   name text not null check (char_length(name) between 2 and 80),
   avatar_url text,
+  role text not null default 'user' check (role in ('user','admin')),
   created_at timestamptz not null default now()
 );
 
@@ -37,6 +38,7 @@ create table if not exists products (
   seller_name text not null,
   seller_phone text not null check (seller_phone ~ '^\\+7[0-9]{10}$'),
   seller_avatar text,
+  images jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 

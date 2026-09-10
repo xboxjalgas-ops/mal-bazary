@@ -31,7 +31,8 @@ module.exports = async (req, res) => {
       if (!ALLOWED_TAGS.includes(category)) return bad(res,'Санат қате');
       if (name.length<3 || name.length>120) return bad(res,'Атауы 3–120 таңба болуы керек');
       if (!price || price.length>60) return bad(res,'Баға қате');
-      table='products'; record={category,name,description,price,location,seller_name:seller.name,seller_phone:seller.phone,seller_avatar:seller.avatar_url||null};
+      const images=body.images||[]; if(!validImages(images))return bad(res,'Суреттер тізімі қате');
+      table='products'; record={category,name,description,price,location,images,seller_name:seller.name,seller_phone:seller.phone,seller_avatar:seller.avatar_url||null};
     }
     const r=await fetch(`${process.env.SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:headers({'Content-Type':'application/json',Prefer:'return=representation'}),body:JSON.stringify([record])});
     if(!r.ok)return res.status(502).json({ok:false,message:'Дерекқорға жазу қатесі'});
