@@ -1,5 +1,5 @@
 /* =========================================================
-   Мал Базары — demo frontend logic (backend жоқ, деректер жадта)
+   Мал Базары — frontend logic
    ========================================================= */
 
 /* ---------- SECURITY: HTML escaping (XSS-тен қорғау) ----------
@@ -164,9 +164,9 @@ function isNewItem(createdAt){
 async function deleteListing(id){
   if(!confirm('Хабарландыруды өшіруге сенімдісіз бе?')) return;
   try{
-    const res = await fetch('/api/delete-post', {
+    const res = await apiFetch('/api/delete-post', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ kind:'listing', id, phone: user.phone })
+      body: JSON.stringify({ kind:'listing', id })
     });
     const data = await res.json();
     if(!data.ok){ showToast(data.message || 'Өшірілмеді'); return; }
@@ -178,9 +178,9 @@ async function deleteListing(id){
 async function deleteProduct(id){
   if(!confirm('Өшіруге сенімдісіз бе?')) return;
   try{
-    const res = await fetch('/api/delete-post', {
+    const res = await apiFetch('/api/delete-post', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ kind:'product', id, phone: user.phone })
+      body: JSON.stringify({ kind:'product', id })
     });
     const data = await res.json();
     if(!data.ok){ showToast(data.message || 'Өшірілмеді'); return; }
@@ -196,7 +196,7 @@ function renderCatbar(){
   const el = document.getElementById('catbar');
   el.innerHTML = cats.map(c=>{
     const ic = c==="Барлығы" ? '' : `<div style="width:16px;height:16px">${icons[c]}</div>`;
-    return `<div class="chip ${c===activeCat?'active':''}" onclick="setCat('${c}')">${ic}${escapeHTML(c)}</div>`;
+    return `<button type="button" class="chip ${c===activeCat?'active':''}" onclick="setCat('${c}')">${ic}${escapeHTML(c)}</button>`;
   }).join('');
 }
 function setCat(c){ activeCat = c; renderCatbar(); renderListings(); }
@@ -245,38 +245,37 @@ function renderListings(){
   `;}).join('');
 }
 
+function productCard(p){
+  const isOwn = user && user.phone === p.phone;
+  return `<div class="prod-card">
+    <span class="prod-tag ${p.tag}">${escapeHTML(tagLabels[p.tag] || 'ӨНІМ')}</span>${isNewItem(p.createdAt) ? '<span class="badge-new">Жаңа</span>' : ''}
+    <div class="prod-name">${escapeHTML(p.name)}</div>
+    <div class="prod-desc">${escapeHTML(p.desc)}</div>
+    <div class="prod-price">${escapeHTML(p.price)}</div>
+    <div class="prod-meta">📍 ${escapeHTML(p.loc)} · ${p.avatar ? `<img src="${escapeHTML(p.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">` : "👤 "}${escapeHTML(p.seller)}</div>
+    <div class="product-actions">
+      <button class="btn btn-sky btn-small" onclick="openProductCall('${p.id}')">📞 Қоңырау шалу</button>
+      ${isOwn ? `<button class="icon-btn icon-btn-wide" onclick="deleteProduct('${p.id}')" title="Өшіру">🗑 Өшіру</button>` : ''}
+    </div>
+  </div>`;
+}
 function renderProducts(){
-  document.getElementById('feedGrid').innerHTML = feed.map(p=>`
-    <div class="prod-card"><span class="prod-tag ${p.tag}">${p.tagText}</span>
-      <div class="prod-name">${escapeHTML(p.name)}</div><div class="prod-desc">${escapeHTML(p.desc)}</div>
-      <div class="prod-price">${escapeHTML(p.price)}</div></div>`).join('');
-  document.getElementById('medGrid').innerHTML = meds.map(p=>`
-    <div class="prod-card"><span class="prod-tag tag-med">ДӘРІ-ДӘРМЕК</span>
-      <div class="prod-name">${escapeHTML(p.name)}</div><div class="prod-desc">${escapeHTML(p.desc)}</div>
-      <div class="prod-price">${escapeHTML(p.price)}</div></div>`).join('');
-  document.getElementById('coopGrid').innerHTML = coops.map(p=>`
-    <div class="prod-card"><span class="prod-tag tag-budget">ҚҰРАЛ-ЖАБДЫҚ</span>
-      <div class="prod-name">${escapeHTML(p.name)}</div><div class="prod-desc">${escapeHTML(p.desc)}</div>
-      <div class="prod-price">${escapeHTML(p.price)}</div></div>`).join('');
-
-  const upGrid = document.getElementById('userProdGrid');
-  const upEmpty = document.getElementById('userProdEmpty');
-  if(userProducts.length===0){
-    upGrid.innerHTML = '';
-    upEmpty.style.display = 'block';
-  }else{
-    upEmpty.style.display = 'none';
-    upGrid.innerHTML = userProducts.map(p=>{
-      const isOwn = user && user.phone === p.phone;
-      return `
-      <div class="prod-card"><span class="prod-tag ${p.tag}">${tagLabels[p.tag]}</span>${isNewItem(p.createdAt) ? '<span class="badge-new">Жаңа</span>' : ''}
-        <div class="prod-name">${escapeHTML(p.name)}</div><div class="prod-desc">${escapeHTML(p.desc)}</div>
-        <div class="prod-price">${escapeHTML(p.price)}</div>
-        <div class="prod-meta">📍 ${escapeHTML(p.loc)} · ${p.avatar ? `<img src="${escapeHTML(p.avatar)}" alt="" style="width:14px;height:14px;border-radius:50%;object-fit:cover;vertical-align:-2px;margin-right:2px;">` : "👤 "}${escapeHTML(p.seller)}</div>
-        ${isOwn ? `<button class="icon-btn icon-btn-wide" style="margin-top:8px;" onclick="deleteProduct('${p.id}')" title="Өшіру">🗑 Өшіру</button>` : ''}
-      </div>`;
-    }).join('');
-  }
+  const groups = {
+    feedGrid: userProducts.filter(p=>p.tag==='tag-good' || p.tag==='tag-budget'),
+    medGrid: userProducts.filter(p=>p.tag==='tag-med'),
+    coopGrid: userProducts.filter(p=>p.tag==='tag-coop')
+  };
+  Object.entries(groups).forEach(([id, items])=>{
+    document.getElementById(id).innerHTML = items.length ? items.map(productCard).join('') : '<div class="empty-note">Бұл санатта әзірше хабарландыру жоқ.</div>';
+  });
+}
+function openProductCall(id){
+  const p = userProducts.find(item=>String(item.id)===String(id));
+  if(!p) return;
+  document.getElementById('callNumber').textContent = p.phone;
+  document.getElementById('callSeller').textContent = 'Сатушы: ' + p.seller + ' — ' + p.name;
+  document.getElementById('callLink').href = 'tel:' + p.phone.replace(/\s/g,'');
+  openModal('callModal');
 }
 
 /* ---------- TABS ---------- */
@@ -295,6 +294,7 @@ function setPostKind(kind){
 }
 
 /* ---------- MODALS ---------- */
+let lastFocusedElement = null;
 function openModal(id){
   if(id==='postModal' && !user){ closeModal('postModal'); openModal('registerModal'); showToast('Алдымен тіркелу қажет'); return; }
   if(id==='postModal'){
@@ -302,7 +302,6 @@ function openModal(id){
     ['postTitle','postDesc','postPrice','postLoc','prodTitle','prodDesc','prodPrice','prodLoc'].forEach(i=>{
       const el = document.getElementById(i); if(el) el.value='';
     });
-    resetPhoneField('postPhone');
     setPostKind('animal');
   }
   if(id==='registerModal'){
@@ -312,9 +311,19 @@ function openModal(id){
     document.getElementById('tgCodeInput').value = '';
     document.getElementById('regName').value = '';
   }
-  document.getElementById(id).classList.add('show');
+  lastFocusedElement = document.activeElement;
+  const modal = document.getElementById(id);
+  modal.classList.add('show');
+  requestAnimationFrame(()=>modal.querySelector('button, a, input, select, textarea')?.focus());
 }
-function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+  lastFocusedElement?.focus?.();
+}
+document.addEventListener('keydown', e=>{
+  if(e.key === 'Escape') document.querySelectorAll('.overlay.show').forEach(m=>closeModal(m.id));
+});
+document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click', e=>{ if(e.target===m) closeModal(m.id); }));
 
 function openCall(idx){
   const l = listings[idx];
@@ -327,6 +336,13 @@ function openCall(idx){
 /* ---------- REGISTER FLOW (Telegram bot арқылы, тегін, дерекқорсыз) ---------- */
 let telegramPhone = "";
 const SESSION_KEY = "mb_session";
+function sessionToken(){ return localStorage.getItem(SESSION_KEY) || ''; }
+function apiFetch(url, options = {}){
+  const headers = { ...(options.headers || {}) };
+  const token = sessionToken();
+  if(token) headers.Authorization = `Bearer ${token}`;
+  return fetch(url, { ...options, headers });
+}
 
 async function verifyTelegramCode(){
   const raw = document.getElementById('tgCodeInput').value.trim();
@@ -350,11 +366,12 @@ async function verifyTelegramCode(){
 
     // Бұл нөмір бұрын тіркелген бе, тексереміз — солай болса, аты-жөнін
     // қайта сұрамай-ақ, бірден тіркелуді аяқтаймыз.
-    const userRes = await fetch(`/api/user?phone=${encodeURIComponent(telegramPhone)}`);
+    localStorage.setItem(SESSION_KEY, data.sessionToken);
+    const userRes = await apiFetch('/api/user');
     const userData = await userRes.json();
 
     if(userData.ok && userData.exists){
-      await completeLogin(telegramPhone, userData.name, userData.avatar_url);
+      await completeLogin(telegramPhone, userData.name, userData.avatar_url, data.sessionToken);
       showToast('Қайта келуіңізбен, ' + userData.name + '!');
     } else {
       document.getElementById('regStep1').classList.add('step-hidden');
@@ -375,9 +392,9 @@ async function finishRegister(){
   if(!telegramPhone){ showToast('Алдымен Telegram арқылы нөміріңізді растаңыз'); return; }
 
   try{
-    const res = await fetch('/api/user', {
+    const res = await apiFetch('/api/user', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ phone: telegramPhone, name })
+      body: JSON.stringify({ name })
     });
     const data = await res.json();
     if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
@@ -392,19 +409,12 @@ async function finishRegister(){
 // Тіркелу/кіру сәтті болған соң: user күйін орнатып, ұзақ мерзімді
 // сессия токенін алып, localStorage-ке сақтайды (келесі жолы Telegram
 // арқылы қайта растаудың қажеті болмайды).
-async function completeLogin(phone, name, avatarUrl){
+async function completeLogin(phone, name, avatarUrl, token){
+  if(token) localStorage.setItem(SESSION_KEY, token);
   user = { name, phone, avatarUrl: avatarUrl || null };
   updateHeader();
   closeModal('registerModal');
   renderListings(); renderProducts();
-  try{
-    const res = await fetch('/api/session', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'create', phone })
-    });
-    const data = await res.json();
-    if(data.ok){ localStorage.setItem(SESSION_KEY, data.token); }
-  }catch(err){}
 }
 
 async function restoreSession(){
@@ -417,7 +427,7 @@ async function restoreSession(){
     });
     const data = await res.json();
     if(!data.ok){ localStorage.removeItem(SESSION_KEY); return; }
-    const userRes = await fetch(`/api/user?phone=${encodeURIComponent(data.phone)}`);
+    const userRes = await apiFetch('/api/user');
     const userData = await userRes.json();
     if(userData.ok && userData.exists){
       user = { name: userData.name, phone: data.phone, avatarUrl: userData.avatar_url || null };
@@ -530,9 +540,9 @@ function handleAvatarChange(event){
 async function uploadAvatar(base64, mimeType){
   showToast('Сурет жүктелуде...');
   try{
-    const res = await fetch('/api/upload-avatar', {
+    const res = await apiFetch('/api/upload-avatar', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ phone: user.phone, imageBase64: base64, mimeType })
+      body: JSON.stringify({ imageBase64: base64, mimeType })
     });
     const data = await res.json();
     if(!data.ok){ showToast(data.message || 'Сурет жүктелмеді'); return; }
@@ -548,9 +558,6 @@ async function uploadAvatar(base64, mimeType){
 
 /* ---------- POST LISTING (мал немесе өнім) — Supabase-ке жазады ---------- */
 async function submitPost(){
-  const phone = document.getElementById('postPhone').value.trim();
-  if(phone.replace(/\D/g,'').length < 11){ showToast('Телефон нөмірін толық енгізіңіз'); return; }
-
   const submitBtn = document.querySelector('#postModal .full-btn');
   if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Жариялануда...'; }
 
@@ -563,9 +570,9 @@ async function submitPost(){
       const loc = document.getElementById('postLoc').value.trim();
       if(!title || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
-      const res = await fetch('/api/create-post', {
+      const res = await apiFetch('/api/create-post', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ kind:'listing', type, title, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
+        body: JSON.stringify({ kind:'listing', type, title, description: desc, price, location: loc })
       });
       const data = await res.json();
       if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
@@ -581,9 +588,9 @@ async function submitPost(){
       const loc = document.getElementById('prodLoc').value.trim();
       if(!name || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
-      const res = await fetch('/api/create-post', {
+      const res = await apiFetch('/api/create-post', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ kind:'product', category: tag, name, description: desc, price, location: loc, seller_name: user.name, seller_phone: phone })
+        body: JSON.stringify({ kind:'product', category: tag, name, description: desc, price, location: loc })
       });
       const data = await res.json();
       if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
@@ -611,8 +618,6 @@ function showToast(msg){
 
 /* ---------- INIT ---------- */
 initTheme();
-attachPhoneMask(document.getElementById('postPhone'));
-resetPhoneField('postPhone');
 renderCatbar();
 loadListings();
 loadUserProducts();
