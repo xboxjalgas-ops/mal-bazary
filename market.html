@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Мал Базары — фермерлерге арналған онлайн-нарық</title>
+<title>Мал Базары — хабарландырулар</title>
+<meta name="description" content="Қазақстандағы мал және мал шаруашылығы өнімдерінің хабарландырулары.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
@@ -35,14 +36,14 @@
 
 <main>
   <div class="tabs">
-    <div class="tab active" data-tab="animals" onclick="switchTab('animals')">Малдар тізімі</div>
-    <div class="tab" data-tab="products" onclick="switchTab('products')">Мал шаруашылығы өнімдері</div>
+    <button type="button" class="tab active" data-tab="animals" onclick="switchTab('animals')">Мал хабарландырулары</button>
+    <button type="button" class="tab" data-tab="products" onclick="switchTab('products')">Мал шаруашылығы өнімдері</button>
   </div>
 
   <div id="animalsView">
     <div class="list-controls">
-      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Іздеу (мыс: сиыр, қошақан...)" oninput="onSearchInput()">
-      <select id="sortSelect" class="sort-select" onchange="onSortChange()">
+      <input type="text" id="searchInput" class="search-input" aria-label="Хабарландыру іздеу" placeholder="🔍 Іздеу (мыс: сиыр, қошақан...)" oninput="onSearchInput()">
+      <select id="sortSelect" class="sort-select" aria-label="Сұрыптау" onchange="onSortChange()">
         <option value="newest">Ең жаңасы</option>
         <option value="price-asc">Баға: арзаннан</option>
         <option value="price-desc">Баға: қымбаттан</option>
@@ -66,58 +67,51 @@
       <h3>Тауыққа арналған үйшіктер мен құралдар</h3>
       <div class="prod-grid" id="coopGrid"></div>
     </div>
-    <div class="prod-group">
-      <h3>Қолданушылар қосқан өнімдер / құрал-жабдықтар</h3>
-      <div class="prod-grid" id="userProdGrid"></div>
-      <div class="empty-note" id="userProdEmpty">Әзірше қолданушылар ешнәрсе қоспаған. Бірінші болыңыз!</div>
-    </div>
   </div>
 </main>
 
 <!-- POST MODAL -->
-<div class="overlay" id="postModal">
+<div class="overlay" role="dialog" aria-modal="true" id="postModal">
   <div class="modal">
     <div class="modal-head">
       <h2 style="font-size:19px;">Хабарландыру беру</h2>
-      <button class="modal-close" onclick="closeModal('postModal')">✕</button>
+      <button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('postModal')">✕</button>
     </div>
 
     <div class="seg" id="postKindSeg">
-      <div class="seg-btn active" data-kind="animal" onclick="setPostKind('animal')">🐄 Мал сату</div>
-      <div class="seg-btn" data-kind="product" onclick="setPostKind('product')">🌾 Өнім/құрал қою</div>
+      <button type="button" class="seg-btn active" data-kind="animal" onclick="setPostKind('animal')">🐄 Мал сату</button>
+      <button type="button" class="seg-btn" data-kind="product" onclick="setPostKind('product')">🌾 Өнім/құрал қою</button>
     </div>
-
-    <div class="upload-box" onclick="alert('Сурет жүктеу батырмасы — демо нұсқада өшірулі тұр.')">📷 Сурет жүктеу үшін басыңыз</div>
 
     <div id="animalFields">
       <div class="field" style="margin-top:14px;">
-        <label>Мал түрі</label>
+        <label for="postType">Мал түрі</label>
         <select id="postType">
           <option>Сиыр</option><option>Қой</option><option>Жылқы</option>
           <option>Тауық</option><option>Қаз</option><option>Үйрек</option><option>Қоян</option>
         </select>
       </div>
       <div class="field">
-        <label>Атауы / қысқаша сипаттама</label>
+        <label for="postTitle">Атауы / қысқаша сипаттама</label>
         <input id="postTitle" type="text" placeholder="Мыс: Қазақы сиыр, 3 жаста, сауын">
       </div>
       <div class="field">
-        <label>Толық описание</label>
+        <label for="postDesc">Толық сипаттама</label>
         <textarea id="postDesc" placeholder="Малдың жасы, салмағы, тұқымы, денсаулығы туралы жазыңыз"></textarea>
       </div>
       <div class="field">
-        <label>Бағасы (₸)</label>
+        <label for="postPrice">Бағасы (₸)</label>
         <input id="postPrice" type="number" placeholder="450000">
       </div>
       <div class="field">
-        <label>Орналасқан жері</label>
+        <label for="postLoc">Орналасқан жері</label>
         <input id="postLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
       </div>
     </div>
 
     <div id="productFields" style="display:none;">
       <div class="field" style="margin-top:14px;">
-        <label>Санат</label>
+        <label for="prodCat">Санат</label>
         <select id="prodCat">
           <option value="tag-good">Жем — сапалы</option>
           <option value="tag-budget">Жем — қолжетімді</option>
@@ -126,37 +120,33 @@
         </select>
       </div>
       <div class="field">
-        <label>Атауы</label>
+        <label for="prodTitle">Атауы</label>
         <input id="prodTitle" type="text" placeholder="Мыс: Витаминді жем қоспасы">
       </div>
       <div class="field">
-        <label>Сипаттамасы</label>
+        <label for="prodDesc">Сипаттамасы</label>
         <textarea id="prodDesc" placeholder="Өнім/құрал туралы қысқаша ақпарат"></textarea>
       </div>
       <div class="field">
-        <label>Бағасы</label>
+        <label for="prodPrice">Бағасы</label>
         <input id="prodPrice" type="text" placeholder="Мыс: 9 500 ₸ / қап">
       </div>
       <div class="field">
-        <label>Орналасқан жері</label>
+        <label for="prodLoc">Орналасқан жері</label>
         <input id="prodLoc" type="text" placeholder="Түркістан обл., Сарыағаш ауданы">
       </div>
     </div>
 
-    <div class="field">
-      <label>Телефон нөміріңіз</label>
-      <input id="postPhone" type="tel" inputmode="numeric">
-    </div>
     <button class="btn btn-primary full-btn" onclick="submitPost()">Жариялау</button>
   </div>
 </div>
 
 <!-- REGISTER MODAL -->
-<div class="overlay" id="registerModal">
+<div class="overlay" role="dialog" aria-modal="true" id="registerModal">
   <div class="modal">
     <div class="modal-head">
       <h2 style="font-size:19px;">Тіркелу</h2>
-      <button class="modal-close" onclick="closeModal('registerModal')">✕</button>
+      <button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('registerModal')">✕</button>
     </div>
 
     <div id="regStep1">
@@ -167,7 +157,7 @@
       </p>
       <a class="btn btn-sky full-btn" href="https://t.me/mal_bazary_bot" target="_blank" style="text-decoration:none;justify-content:center;margin-bottom:14px;">Telegram-ды ашу</a>
       <div class="field">
-        <label>Telegram-нан алған код</label>
+        <label for="tgCodeInput">Telegram-нан алған код</label>
         <textarea id="tgCodeInput" placeholder="Кодты осында қойыңыз" style="min-height:60px;"></textarea>
       </div>
       <button class="btn btn-primary full-btn" id="tgVerifyBtn" onclick="verifyTelegramCode()">Тексеру</button>
@@ -176,7 +166,7 @@
     <div id="regStep2" class="step-hidden">
       <p class="modal-note" style="margin-bottom:12px;">✅ Нөмір расталды: <b id="tgVerifiedPhone"></b></p>
       <div class="field">
-        <label>Аты-жөніңіз</label>
+        <label for="regName">Аты-жөніңіз</label>
         <input id="regName" type="text" placeholder="Мыс: Асхат Нұрланұлы">
       </div>
       <button class="btn btn-primary full-btn" onclick="finishRegister()">Тіркелуді аяқтау</button>
@@ -187,29 +177,29 @@
 </div>
 
 <!-- CALL MODAL -->
-<div class="overlay" id="callModal">
+<div class="overlay" role="dialog" aria-modal="true" id="callModal">
   <div class="modal">
     <div class="modal-head">
       <h2 style="font-size:19px;">Сатушыға қоңырау шалу</h2>
-      <button class="modal-close" onclick="closeModal('callModal')">✕</button>
+      <button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('callModal')">✕</button>
     </div>
     <div class="phone-reveal">
       <div class="num" id="callNumber">+7 700 000 00 00</div>
       <div class="seller" id="callSeller">Сатушы: —</div>
     </div>
     <a class="btn btn-primary full-btn" id="callLink" href="#" style="text-decoration:none;justify-content:center;">📞 Қазір қоңырау шалу</a>
-    <p class="modal-note">Сатыпалушы мен сатушы арасындағы байланыс тек қоңырау арқылы жүзеге асады — хат-хабар жоқ, тікелей сөйлесесіз.</p>
+    <p class="modal-note">Сатып алушы мен сатушы арасындағы байланыс тек қоңырау арқылы жүзеге асады — хат-хабар жоқ, тікелей сөйлесесіз.</p>
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- PROFILE / SETTINGS MODAL -->
-<div class="overlay" id="profileModal">
+<div class="overlay" role="dialog" aria-modal="true" id="profileModal">
   <div class="modal">
     <div class="modal-head">
       <h2 style="font-size:19px;">Профиль</h2>
-      <button class="modal-close" onclick="closeModal('profileModal')">✕</button>
+      <button class="modal-close" aria-label="Терезені жабу" onclick="closeModal('profileModal')">✕</button>
     </div>
 
     <div class="profile-avatar-row">

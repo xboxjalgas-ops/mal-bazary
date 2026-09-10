@@ -1,85 +1,32 @@
-// api/upload-avatar.js  (Vercel serverless function)
-//
-// Қолданушының профиль суретін Supabase Storage-ке жүктейді және
-// users кестесіндегі avatar_url өрісін жаңартады. Сурет клиентте
-// (браузерде) кішірейтіліп, содан кейін base64 түрінде жіберіледі.
-
-const ALLOWED_MIME = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
-const MAX_BYTES = 2 * 1024 * 1024; // 2 МБ
-
+const { requireAuth, noStore } = require('../lib/auth');
+const ALLOWED = {
+  'image/jpeg': { ext: 'jpg', test: b => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+  'image/png': { ext: 'png', test: b => b.slice(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])) },
+  'image/webp': { ext: 'webp', test: b => b.slice(0,4).toString() === 'RIFF' && b.slice(8,12).toString() === 'WEBP' },
+};
+const MAX_BYTES = 2 * 1024 * 1024;
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method not allowed');
-  }
-
-  const body = req.body || {};
-  const phone = String(body.phone || '').trim();
-  const mimeType = String(body.mimeType || '').trim();
-  const imageBase64 = String(body.imageBase64 || '').trim();
-
-  if (!phone || phone.replace(/\D/g, '').length < 10) {
-    return res.status(400).json({ ok: false, message: 'Телефон қате' });
-  }
-  const ext = ALLOWED_MIME[mimeType];
-  if (!ext) {
-    return res.status(400).json({ ok: false, message: 'Сурет форматы қолдау таппайды (JPEG/PNG/WEBP керек)' });
-  }
-  if (!imageBase64) {
-    return res.status(400).json({ ok: false, message: 'Сурет жоқ' });
-  }
-
+  noStore(res);
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, message: 'Method not allowed' });
+  const session = requireAuth(req, res); if (!session) return;
+  const mimeType = String(req.body?.mimeType || ''), imageBase64 = String(req.body?.imageBase64 || '').trim();
+  const format = ALLOWED[mimeType];
+  if (!format || !imageBase64 || imageBase64.length > 3_000_000) return res.status(400).json({ ok: false, message: 'JPEG, PNG немесе WEBP суретін таңдаңыз' });
   let buffer;
+  try { buffer = Buffer.from(imageBase64, 'base64'); } catch { return res.status(400).json({ ok: false, message: 'Сурет деректері қате' }); }
+  if (!buffer.length || buffer.length > MAX_BYTES || !format.test(buffer)) return res.status(400).json({ ok: false, message: 'Сурет қате немесе 2 МБ-тан үлкен' });
   try {
-    buffer = Buffer.from(imageBase64, 'base64');
-  } catch {
-    return res.status(400).json({ ok: false, message: 'Сурет деректері қате' });
-  }
-  if (buffer.length > MAX_BYTES) {
-    return res.status(400).json({ ok: false, message: 'Сурет тым үлкен (2 МБ-тан аспауы керек)' });
-  }
-
-  try {
-    const phoneDigits = phone.replace(/\D/g, '');
-    const path = `${phoneDigits}.${ext}`;
-    const uploadUrl = `${process.env.SUPABASE_URL}/storage/v1/object/avatars/${path}`;
-
-    const uploadRes = await fetch(uploadUrl, {
-      method: 'POST',
-      headers: {
-        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        'Content-Type': mimeType,
-        'x-upsert': 'true',
-      },
-      body: buffer,
+    const common = { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` };
+    const path = `${session.phone.replace(/\D/g, '')}.${format.ext}`;
+    const upload = await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/avatars/${path}`, { method: 'POST', headers: { ...common, 'Content-Type': mimeType, 'x-upsert': 'true' }, body: buffer });
+    if (!upload.ok) return res.status(502).json({ ok: false, message: 'Сурет жүктеу қатесі' });
+    const stableUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/avatars/${path}`;
+    const update = await fetch(`${process.env.SUPABASE_URL}/rest/v1/users?phone=eq.${encodeURIComponent(session.phone)}`, {
+      method: 'PATCH', headers: { ...common, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body: JSON.stringify({ avatar_url: stableUrl }),
     });
-
-    if (!uploadRes.ok) {
-      return res.status(502).json({ ok: false, message: 'Сурет жүктеу қатесі' });
-    }
-
-    const publicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/avatars/${path}?t=${Date.now()}`;
-
-    const updateRes = await fetch(
-      `${process.env.SUPABASE_URL}/rest/v1/users?on_conflict=phone`,
-      {
-        method: 'POST',
-        headers: {
-          apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-          'Content-Type': 'application/json',
-          Prefer: 'resolution=merge-duplicates,return=representation',
-        },
-        body: JSON.stringify([{ phone, avatar_url: publicUrl }]),
-      }
-    );
-
-    if (!updateRes.ok) {
-      return res.status(502).json({ ok: false, message: 'Дерекқорды жаңарту қатесі' });
-    }
-
-    return res.status(200).json({ ok: true, avatar_url: publicUrl });
-  } catch (err) {
-    return res.status(500).json({ ok: false, message: 'Серверде қате' });
-  }
+    if (!update.ok) return res.status(502).json({ ok: false, message: 'Профильді жаңарту қатесі' });
+    const rows = await update.json();
+    if (!rows.length) return res.status(404).json({ ok: false, message: 'Қолданушы табылмады' });
+    return res.status(200).json({ ok: true, avatar_url: `${stableUrl}?t=${Date.now()}` });
+  } catch { return res.status(500).json({ ok: false, message: 'Серверде қате' }); }
 };
