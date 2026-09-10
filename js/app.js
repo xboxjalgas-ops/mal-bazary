@@ -194,13 +194,16 @@ async function deleteProduct(id){
   }catch(err){ showToast('Байланыс қатесі'); }
 }
 
+const animalPhotos={"Сиыр":"cow","Қой":"sheep","Жылқы":"horse","Тауық":"chicken","Қаз":"goose","Үйрек":"duck","Қоян":"rabbit"};
+const productPhotos={"tag-good":"feed","tag-budget":"feed","tag-med":"medicine","tag-coop":"equipment"};
+function animalPhoto(type,title){const file=animalPhotos[type];return file?`<img class="listing-thumb placeholder-photo" src="assets/home/${file}.svg" alt="${escapeHTML(title||type)}">`:iconChip(type);}
 const tagLabels = {"tag-good":"ЖЕМ · САПАЛЫ","tag-budget":"ЖЕМ · ҚОЛЖЕТІМДІ","tag-med":"ДӘРІ-ДӘРМЕК","tag-coop":"ҚҰРАЛ-ЖАБДЫҚ"};
 
 /* ---------- RENDER ---------- */
 function renderCatbar(){
   const el = document.getElementById('catbar');
   el.innerHTML = cats.map(c=>{
-    const ic = c==="Барлығы" ? '' : `<div style="width:16px;height:16px">${icons[c]}</div>`;
+    const ic = c==="Барлығы" ? '' : `<img class="cat-photo-icon" src="assets/home/${animalPhotos[c]}.svg" alt="">`;
     return `<button type="button" class="chip ${c===activeCat?'active':''}" onclick="setCat('${c}')">${ic}${escapeHTML(c)}</button>`;
   }).join('');
 }
@@ -222,7 +225,7 @@ function renderListings(){
   if(!filtered.length){list.innerHTML='<div class="empty-note">Ештеңе табылмады. Іздеуді немесе санатты өзгертіп көріңіз.</div>';return;}
   list.innerHTML=filtered.map(l=>{
     const isOwn=user&&user.phone===l.phone,canManage=isOwn||user?.role==='admin',isSold=l.status==='sold';
-    const visual=l.images?.[0]?`<button class="listing-image-button" onclick="openGallery('${l.id}')" aria-label="Суреттерді ашу"><img class="listing-thumb" src="${escapeHTML(l.images[0])}" alt="${escapeHTML(l.title)}"></button>`:iconChip(l.type);
+    const visual=l.images?.[0]?`<button class="listing-image-button" onclick="openGallery('${l.id}')" aria-label="Суреттерді ашу"><img class="listing-thumb" src="${escapeHTML(l.images[0])}" alt="${escapeHTML(l.title)}"></button>`:animalPhoto(l.type,l.title);
     return `<div class="row-card ${isSold?'is-sold':''}">
       <div class="row-icon" style="background:${catColors[l.type]}18;">${visual}</div>
       <div class="row-body">
@@ -297,7 +300,7 @@ async function toggleListingStatus(id,status){
 function productCard(p){
   const isOwn=user&&user.phone===p.phone,canManage=isOwn||user?.role==='admin';
   return `<div class="prod-card">
-    ${p.images?.[0]?`<button class="prod-image-button" onclick="openProductGallery('${p.id}')"><img src="${escapeHTML(p.images[0])}" alt="${escapeHTML(p.name)}"></button>`:''}
+    ${p.images?.[0]?`<button class="prod-image-button" onclick="openProductGallery('${p.id}')"><img src="${escapeHTML(p.images[0])}" alt="${escapeHTML(p.name)}"></button>`:`<div class="prod-image-button product-placeholder"><img src="assets/home/${productPhotos[p.tag]||'equipment'}.svg" alt="${escapeHTML(p.name)}"></div>`}
     <span class="prod-tag ${p.tag}">${escapeHTML(tagLabels[p.tag] || 'ӨНІМ')}</span>${isNewItem(p.createdAt) ? '<span class="badge-new">Жаңа</span>' : ''}
     <div class="prod-name">${escapeHTML(p.name)}</div>
     <div class="prod-desc">${escapeHTML(p.desc)}</div>
