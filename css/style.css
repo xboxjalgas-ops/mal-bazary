@@ -74,11 +74,16 @@ header{
   padding:16px 20px;max-width:1000px;margin:0 auto;gap:12px;
 }
 .logo{display:flex;align-items:center;gap:10px;}
+.home-logo-link{position:relative;color:inherit;text-decoration:none;border-radius:11px;padding:4px 6px 4px 4px;transition:background .16s ease,transform .16s ease;}
+.home-logo-link:hover{background:color-mix(in srgb,var(--primary) 9%,transparent);transform:translateY(-1px);}
 .logo-mark{
-  width:38px;height:38px;border-radius:8px;background:var(--primary);
+  position:relative;width:38px;height:38px;border-radius:8px;background:var(--primary);
   display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .logo-mark svg{width:22px;height:22px;}
+.home-logo-badge{position:absolute;right:-5px;bottom:-5px;width:18px;height:18px;border:2px solid var(--bg);border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;box-shadow:var(--shadow-sm);}
+.home-logo-badge svg{width:11px;height:11px;}
+.home-cue{display:none;}
 .logo-text{font-family:'PT Serif',serif;font-weight:700;font-size:20px;color:var(--primary-dark);line-height:1;}
 .logo-sub{font-size:11px;color:var(--ink-soft);letter-spacing:.04em;}
 .head-actions{display:flex;gap:8px;align-items:center;}
@@ -280,8 +285,10 @@ main{max-width:1000px;margin:0 auto;padding:12px 20px 60px;}
 @media (max-width:520px){
   .row-card{flex-wrap:wrap;}
   .row-actions{width:100%;flex-direction:row;justify-content:space-between;align-items:center;}
-  .logo-sub{display:none;}
-  .headrow{padding:12px 16px;}
+  .logo-sub{display:block;}
+  .logo-sub .market-cue{display:none;}
+  .logo-sub .home-cue{display:inline;color:var(--accent);font-size:10px;font-weight:800;}
+  .headrow{padding:10px 12px;}
   .prod-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));}
   .tabs{margin-left:16px;margin-right:16px;}
   .modal{padding:20px;border-radius:14px;}
@@ -345,7 +352,25 @@ button.chip{font-family:inherit;}
 .ticket-admin-actions{display:grid;grid-template-columns:150px 1fr auto;gap:7px;margin-top:10px;}
 .ticket-admin-actions select,.ticket-admin-actions input{min-width:0;border:1.5px solid var(--border);border-radius:8px;padding:8px;background:var(--surface);color:var(--ink);}
 @media(max-width:620px){.ticket-admin-actions{grid-template-columns:1fr;}.help-btn{padding:7px 9px;}}
-@media(max-width:620px){.help-label{display:none;}.help-btn{width:34px;height:34px;justify-content:center;padding:0;}}
+@media(max-width:620px){
+  .headrow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 10px;}
+  .home-logo-link{min-width:0;width:max-content;max-width:100%;}
+  .theme-toggle-btn{grid-column:2;grid-row:1;justify-self:end;}
+  .head-actions{grid-column:1/-1;grid-row:2;width:100%;display:grid;grid-template-columns:42px minmax(0,1fr) minmax(118px,1.15fr);gap:8px;}
+  .head-actions:has(.inbox-btn){grid-template-columns:42px minmax(112px,1fr) minmax(118px,1.15fr);}
+  .help-label{display:none;}
+  .help-btn{width:42px;height:42px;justify-content:center;padding:0;font-size:16px;}
+  .inbox-btn{grid-column:1/-1;grid-row:2;height:42px;justify-content:center;border-color:color-mix(in srgb,var(--sky) 45%,var(--border));color:var(--sky);background:color-mix(in srgb,var(--sky) 8%,var(--surface));}
+  .inbox-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  .inbox-label{display:inline;font-size:12px;}
+  .user-chip{min-width:0;height:42px;padding-right:10px;justify-content:center;}
+  .user-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .post-header-btn{min-width:0;height:42px;justify-content:center;text-align:center;line-height:1.15;}
+  .short-label{display:none;}
+  .head-actions:has(.inbox-btn) .help-btn{grid-column:1;grid-row:1;}
+  .head-actions:has(.inbox-btn) .user-chip{grid-column:2;grid-row:1;}
+  .head-actions:has(.inbox-btn) .post-header-btn{grid-column:3;grid-row:1;}
+}
 /* Marketplace Pro: filters, chat, offers, seller shop and ratings */
 .advanced-filters{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr)) auto auto;gap:8px;margin:10px 0;padding:12px;border:1.5px solid var(--border);border-radius:12px;background:var(--surface)}
 .advanced-filters[hidden]{display:none}.advanced-filters input{min-width:0;border:1.5px solid var(--border);border-radius:9px;padding:9px;background:var(--surface);color:var(--ink)}.advanced-filters label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
