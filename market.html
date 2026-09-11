@@ -16,6 +16,9 @@
 <link rel="canonical" href="https://mal-bazary.vercel.app/market.html">
 <link rel="alternate" hreflang="kk-KZ" href="https://mal-bazary.vercel.app/market.html">
 <link rel="icon" href="favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3F5A38">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=20260911-10">
@@ -85,12 +88,19 @@
       <button class="chip" onclick="toggleAdvancedFilters()">⚙ Сүзгі</button>
     </div>
     <div class="advanced-filters" id="advancedFilters" hidden>
-      <input id="filterLocation" placeholder="📍 Қала/аудан" oninput="applyAdvancedFilters()">
+      <select id="filterRegion" aria-label="Өңір" onchange="applyAdvancedFilters()">
+        <option value="">Барлық өңір</option><option>Астана</option><option>Алматы</option><option>Шымкент</option><option>Абай</option><option>Ақмола</option><option>Ақтөбе</option><option>Алматы облысы</option><option>Атырау</option><option>Батыс Қазақстан</option><option>Жамбыл</option><option>Жетісу</option><option>Қарағанды</option><option>Қостанай</option><option>Қызылорда</option><option>Маңғыстау</option><option>Павлодар</option><option>Солтүстік Қазақстан</option><option>Түркістан</option><option>Ұлытау</option><option>Шығыс Қазақстан</option>
+      </select>
+      <input id="filterLocation" placeholder="📍 Қала немесе аудан" oninput="applyAdvancedFilters()">
       <input id="filterMinPrice" type="number" min="0" placeholder="Мин. баға" oninput="applyAdvancedFilters()">
       <input id="filterMaxPrice" type="number" min="0" placeholder="Макс. баға" oninput="applyAdvancedFilters()">
       <label><input id="filterVerified" type="checkbox" onchange="applyAdvancedFilters()"> ✓ Тексерілген сатушы</label>
       <button class="btn btn-ghost btn-small" onclick="resetAdvancedFilters()">Тазалау</button>
     </div>
+    <section class="price-insights" aria-labelledby="priceInsightsTitle">
+      <div class="price-insights-head"><div><span>Баға статистикасы</span><h2 id="priceInsightsTitle">Нарықтағы орташа баға</h2></div><small>Белсенді хабарландырулар негізінде</small></div>
+      <div class="price-stats" id="priceStats"></div>
+    </section>
     <div class="section-title" id="listCount">Барлық хабарландырулар</div>
     <div class="list" id="listingsList"></div>
   </div>
@@ -262,7 +272,7 @@
     <div id="supportGuestNote" class="support-login-note" style="display:none;">Өтінім жіберу үшін Google арқылы кіріңіз.<button class="btn btn-primary btn-small" onclick="closeModal('supportModal');openModal('registerModal')">Кіру</button></div>
     <div id="supportForm">
       <h3 class="support-heading">Қолдау қызметіне жазу</h3>
-      <div class="field"><label for="supportCategory">Санат</label><select id="supportCategory"><option>Тіркелу</option><option>Хабарландыру</option><option>Сурет</option><option>Қауіпсіздік</option><option>Техникалық қате</option><option>Басқа</option></select></div>
+      <div class="field"><label for="supportCategory">Санат</label><select id="supportCategory"><option>Тіркелу</option><option>Хабарландыру</option><option>Сурет</option><option>Қауіпсіздік</option><option>Техникалық қате</option><option>Шағым</option><option>Басқа</option></select></div>
       <div class="field"><label for="supportSubject">Тақырып</label><input id="supportSubject" maxlength="120" placeholder="Мәселені қысқаша жазыңыз"></div>
       <div class="field"><label for="supportMessage">Толық сипаттама</label><textarea id="supportMessage" maxlength="2000" placeholder="Не болғанын және қандай қате шыққанын жазыңыз"></textarea></div>
       <button class="btn btn-primary full-btn" id="supportSubmitBtn" onclick="submitSupportTicket()">Өтінімді жіберу</button>
@@ -339,5 +349,6 @@
 <script src="js/app.js?v=20260911-10"></script>
 <script src="js/marketplace.js?v=20260911-10"></script>
 <script src="js/effects.js?v=20260911-10"></script>
+<script src="js/pwa.js?v=20260912-1"></script>
 </body>
 </html>

@@ -1,0 +1,27 @@
+function escapeDetail(value){const d=document.createElement('div');d.textContent=String(value??'');return d.innerHTML;}
+const id=new URLSearchParams(location.search).get('id');let currentListing=null;
+function money(value){return Number(value||0).toLocaleString('ru-RU')+' ₸';}
+function detailUrl(){return location.href.split('#')[0];}
+function showDetailToast(message){const t=document.getElementById('toast');t.textContent=message;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+async function authorizedFetch(url,options={}){const token=await authAccessToken();return fetch(url,{...options,headers:{...(options.headers||{}),...(token?{Authorization:`Bearer ${token}`}:{})}});}
+function shareDetail(){if(!currentListing)return;const text=`${currentListing.title} — ${money(currentListing.price)}, ${currentListing.location}`;if(navigator.share){navigator.share({title:currentListing.title,text,url:detailUrl()}).catch(()=>{});return;}window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${detailUrl()}`)}`,'_blank','noopener');}
+async function reportDetail(){
+ if(!currentListing)return;const token=await authAccessToken();if(!token){showDetailToast('Шағым жіберу үшін нарық бетінде кіріңіз');setTimeout(()=>location.href=`market.html?return=${encodeURIComponent(location.pathname+location.search)}`,900);return;}
+ const reason=(prompt('Шағым себебін жазыңыз (кемінде 10 таңба):','')||'').trim();if(!reason)return;if(reason.length<10){showDetailToast('Себепті толығырақ жазыңыз');return;}
+ const body={category:'Шағым',subject:`Хабарландыруға шағым: ${currentListing.title}`.slice(0,120),message:`Хабарландыру ID: ${currentListing.id}\nСілтеме: ${detailUrl()}\nСебеп: ${reason}`};
+ try{const r=await authorizedFetch('/api/support',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.message||'Жіберілмеді');showDetailToast('Шағым жіберілді');}catch(e){showDetailToast(e.message);}
+}
+function renderDetail(l){
+ currentListing=l;document.title=`${l.title} — ${money(l.price)} | Мал Базары`;document.querySelector('meta[name="description"]').content=`${l.title}. ${l.location}. Бағасы ${money(l.price)}. Мал Базары.`;
+ const images=Array.isArray(l.images)&&l.images.length?l.images:[`assets/home/${({Сиыр:'cow',Қой:'sheep',Жылқы:'horse',Тауық:'chicken',Қаз:'goose',Үйрек:'duck',Қоян:'rabbit'})[l.type]||'cow'}.svg`];
+ const facts=Object.entries(l.animal_details||{}).filter(([,v])=>v).map(([k,v])=>`<div><span>${escapeDetail(({breed:'Тұқым',age:'Жасы',weight:'Салмағы',health:'Денсаулық',documents:'Құжат'})[k]||k)}</span><b>${escapeDetail(v)}</b></div>`).join('');
+ const sold=l.status==='sold';
+ document.getElementById('listingDetail').className='listing-detail';document.getElementById('listingDetail').innerHTML=`
+ <nav class="detail-breadcrumb"><a href="market.html">Нарық</a><span>›</span><span>${escapeDetail(l.type)}</span></nav>
+ <section class="detail-grid"><div class="detail-gallery"><img id="detailMainImage" src="${escapeDetail(images[0])}" alt="${escapeDetail(l.title)}"><div class="detail-thumbs">${images.map((x,i)=>`<button class="${i?'':'active'}" onclick="document.getElementById('detailMainImage').src='${escapeDetail(x)}';document.querySelectorAll('.detail-thumbs button').forEach(b=>b.classList.remove('active'));this.classList.add('active')"><img src="${escapeDetail(x)}" alt="${i+1}-сурет"></button>`).join('')}</div></div>
+ <article class="detail-card"><div class="detail-kicker">${escapeDetail(l.type)} · ${escapeDetail(l.location)}</div><h1>${escapeDetail(l.title)}</h1>${sold?'<span class="badge-sold">Сатылды</span>':''}<div class="detail-price">${money(l.price)}</div><p>${escapeDetail(l.description||'Сатушы сипаттама қоспаған.')}</p>${facts?`<div class="detail-facts">${facts}</div>`:''}
+ <div class="detail-actions">${sold?'':`<a class="btn btn-sky" href="tel:${escapeDetail(String(l.seller_phone||'').replace(/\s/g,''))}">📞 Қоңырау шалу</a>`}<button class="btn btn-primary" onclick="shareDetail()">WhatsApp-та бөлісу</button><button class="btn btn-ghost" onclick="reportDetail()">⚑ Шағымдану</button></div></article></section>
+ <section class="detail-seller"><div><span>Сатушы</span><h2>${escapeDetail(l.seller_shop_name||l.seller_name)}</h2><p>${escapeDetail(l.seller_name)} · ${escapeDetail(l.location)}</p></div><div class="trust-badges">${l.seller_verified?'<span class="trust-badge verified">✓ Тексерілген сатушы</span>':''}${l.seller_auth_id?'<span class="trust-badge">G Аккаунтпен кірген</span>':''}${Number(l.seller_rating)?`<span class="trust-badge">⭐ ${Number(l.seller_rating)} (${Number(l.seller_review_count||0)} пікір)</span>`:'<span class="trust-badge muted">Пікір әлі жоқ</span>'}</div></section>`;
+}
+async function init(){consumeOAuthHash();if(!id){document.getElementById('listingDetail').innerHTML='<div class="empty-note">Хабарландыру сілтемесі толық емес. <a href="market.html">Нарыққа өтіңіз</a>.</div>';return;}try{const r=await fetch('/api/get-data?type=listings'),d=await r.json();const l=(d.listings||[]).find(x=>String(x.id)===String(id));if(!l)throw new Error('Хабарландыру табылмады немесе өшірілген.');renderDetail(l);}catch(e){document.getElementById('listingDetail').innerHTML=`<div class="empty-note">${escapeDetail(e.message)} <a href="market.html">Нарыққа қайту</a></div>`;}}
+init();

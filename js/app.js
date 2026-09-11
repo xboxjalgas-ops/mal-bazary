@@ -209,10 +209,27 @@ function renderCatbar(){
 }
 function setCat(c){ activeCat = c; renderCatbar(); renderListings(); }
 
+function listingUrl(id){return `${location.origin}/listing.html?id=${encodeURIComponent(id)}`;}
+function shareListing(id){
+  const l=listings.find(x=>String(x.id)===String(id));if(!l)return;
+  const url=listingUrl(l.id),text=`${l.title} — ${Number(l.price).toLocaleString('ru-RU')} ₸, ${l.loc}`;
+  if(navigator.share){navigator.share({title:l.title,text,url}).catch(()=>{});return;}
+  window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,'_blank','noopener');
+}
+function renderPriceStats(){
+  const box=document.getElementById('priceStats');if(!box)return;
+  const groups=(activeCat==='Барлығы'?cats.slice(1):[activeCat]).map(type=>{
+    const prices=listings.filter(l=>l.type===type&&l.status!=='sold'&&Number(l.price)>0).map(l=>Number(l.price));
+    if(!prices.length)return null;const avg=Math.round(prices.reduce((a,b)=>a+b,0)/prices.length);
+    return {type,avg,min:Math.min(...prices),max:Math.max(...prices),count:prices.length};
+  }).filter(Boolean);
+  box.innerHTML=groups.length?groups.map(g=>`<article class="price-stat"><b>${escapeHTML(g.type)}</b><strong>${g.avg.toLocaleString('ru-RU')} ₸</strong><span>${g.count} хабарландыру · ${g.min.toLocaleString('ru-RU')}–${g.max.toLocaleString('ru-RU')} ₸</span></article>`).join(''):'<div class="empty-note">Статистика үшін белсенді хабарландыру қажет.</div>';
+}
 function renderListings(){
   let filtered = activeCat==="Барлығы" ? listings.slice() : listings.filter(l=>l.type===activeCat);
   if(searchQuery) filtered=filtered.filter(l=>l.title.toLowerCase().includes(searchQuery)||(l.desc&&l.desc.toLowerCase().includes(searchQuery))||l.loc.toLowerCase().includes(searchQuery));
   if(favoritesOnly) filtered=filtered.filter(l=>isFavorite(l.id));
+  if(typeof filterRegion!=='undefined'&&filterRegion)filtered=filtered.filter(l=>l.loc.toLowerCase().includes(filterRegion.replace(' облысы','')));
   if(typeof filterLocation!=='undefined'&&filterLocation)filtered=filtered.filter(l=>l.loc.toLowerCase().includes(filterLocation));
   if(typeof filterMin!=='undefined'&&filterMin)filtered=filtered.filter(l=>Number(l.price)>=filterMin);
   if(typeof filterMax!=='undefined'&&filterMax)filtered=filtered.filter(l=>Number(l.price)<=filterMax);
@@ -220,25 +237,30 @@ function renderListings(){
   if(sortMode==="price-asc")filtered.sort((a,b)=>Number(a.price)-Number(b.price));
   else if(sortMode==="price-desc")filtered.sort((a,b)=>Number(b.price)-Number(a.price));
   else filtered.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  renderPriceStats();
   document.getElementById('listCount').textContent=activeCat==="Барлығы"?`Барлық хабарландырулар (${filtered.length})`:`${activeCat} — ${filtered.length} хабарландыру`;
   const list=document.getElementById('listingsList');
   if(!filtered.length){list.innerHTML='<div class="empty-note">Ештеңе табылмады. Іздеуді немесе санатты өзгертіп көріңіз.</div>';return;}
   list.innerHTML=filtered.map(l=>{
     const isOwn=user&&user.phone===l.phone,canManage=isOwn||user?.role==='admin',isSold=l.status==='sold';
     const visual=l.images?.[0]?`<button class="listing-image-button" onclick="openGallery('${l.id}')" aria-label="Суреттерді ашу"><img class="listing-thumb" src="${escapeHTML(l.images[0])}" alt="${escapeHTML(l.title)}"></button>`:animalPhoto(l.type,l.title);
+    const trust=`<div class="trust-badges">${l.sellerVerified?'<span class="trust-badge verified">✓ Тексерілген сатушы</span>':''}${l.sellerAuthId?'<span class="trust-badge">G Аккаунтпен кірген</span>':''}${l.sellerRating?`<span class="trust-badge">⭐ ${l.sellerRating} (${l.sellerReviewCount})</span>`:'<span class="trust-badge muted">Пікір әлі жоқ</span>'}</div>`;
     return `<div class="row-card ${isSold?'is-sold':''}">
       <div class="row-icon" style="background:${catColors[l.type]}18;">${visual}</div>
       <div class="row-body">
-        <div class="row-title">${escapeHTML(l.title)}${isNewItem(l.createdAt)?'<span class="badge-new">Жаңа</span>':''}${isSold?'<span class="badge-sold">Сатылды</span>':''}</div>
-        <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><button class="seller-link" onclick="openSeller('${l.sellerAuthId||''}')">${l.avatar?`<img src="${escapeHTML(l.avatar)}" alt="">`:'👤'} ${escapeHTML(l.sellerShopName||l.seller)} ${l.sellerVerified?'✓':''} ${l.sellerRating?`⭐ ${l.sellerRating}`:''}</button>${l.images?.length?`<span>📷 ${l.images.length}</span>`:''}</div><div class="animal-facts">${Object.entries(l.animalDetails||{}).filter(([,v])=>v).map(([k,v])=>`<span>${{breed:'Тұқым',age:'Жасы',weight:'Салмағы',health:'Денсаулық',documents:'Құжат'}[k]||k}: ${escapeHTML(v)}</span>`).join('')}</div>
+        <div class="row-title"><a class="listing-title-link" href="listing.html?id=${encodeURIComponent(l.id)}">${escapeHTML(l.title)}</a>${isNewItem(l.createdAt)?'<span class="badge-new">Жаңа</span>':''}${isSold?'<span class="badge-sold">Сатылды</span>':''}</div>
+        <div class="row-meta"><span>📍 ${escapeHTML(l.loc)}</span><button class="seller-link" onclick="openSeller('${l.sellerAuthId||''}')">${l.avatar?`<img src="${escapeHTML(l.avatar)}" alt="">`:'👤'} ${escapeHTML(l.sellerShopName||l.seller)}</button>${l.images?.length?`<span>📷 ${l.images.length}</span>`:''}</div>${trust}<div class="animal-facts">${Object.entries(l.animalDetails||{}).filter(([,v])=>v).map(([k,v])=>`<span>${{breed:'Тұқым',age:'Жасы',weight:'Салмағы',health:'Денсаулық',documents:'Құжат'}[k]||k}: ${escapeHTML(v)}</span>`).join('')}</div>
       </div>
       <div class="row-actions">
         <div class="owner-actions">
+          <a class="icon-btn" href="listing.html?id=${encodeURIComponent(l.id)}" title="Толық көру" aria-label="Толық көру">↗</a>
+          <button class="icon-btn" onclick="shareListing('${l.id}')" title="WhatsApp-та бөлісу" aria-label="Бөлісу">↗︎</button>
           <button class="icon-btn ${isFavorite(l.id)?'fav-active':''}" onclick="toggleFavorite('${l.id}')" title="Таңдаулыға қосу">${isFavorite(l.id)?'★':'☆'}</button>
+          ${!isOwn?`<button class="icon-btn" onclick="reportListing('${l.id}')" title="Шағымдану" aria-label="Шағымдану">⚑</button>`:''}
           ${canManage?`<button class="icon-btn" onclick="editListing('${l.id}')" title="Өңдеу">✏️</button><button class="icon-btn icon-btn-wide" onclick="toggleListingStatus('${l.id}','${isSold?'active':'sold'}')">${isSold?'Қайта ашу':'Сатылды'}</button><button class="icon-btn" onclick="deleteListing('${l.id}')" title="Өшіру">🗑</button>`:''}
         </div>
         <div class="row-price">${Number(l.price).toLocaleString('ru-RU')} ₸</div>
-        ${isSold?`${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="leaveReview('${l.id}')">⭐ Пікір</button>`:'<span class="modal-note">Сатылым жабық</span>'}`:`<div class="buyer-actions"><button class="btn btn-sky btn-small" onclick="openCallById('${l.id}')">📞 Қоңырау</button>${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="startChat('${l.id}')">💬 Хат</button><button class="btn btn-ghost btn-small" onclick="makeOffer('${l.id}',${Number(l.price)})">💰 Ұсыныс</button><button class="btn btn-ghost btn-small" onclick="reserveListing('${l.id}')">🔒 Бронь</button>`:''}</div>`}
+        ${isSold?`${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="leaveReview('${l.id}')">⭐ Пікір</button>`:'<span class="modal-note">Сатылым жабық</span>'}`:`<div class="buyer-actions"><button class="btn btn-sky btn-small" onclick="openCallById('${l.id}')">📞 Қоңырау</button><button class="btn btn-ghost btn-small" onclick="shareListing('${l.id}')">WhatsApp</button>${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="startChat('${l.id}')">💬 Хат</button><button class="btn btn-ghost btn-small" onclick="makeOffer('${l.id}',${Number(l.price)})">💰 Ұсыныс</button><button class="btn btn-ghost btn-small" onclick="reserveListing('${l.id}')">🔒 Бронь</button>`:''}</div>`}
       </div>
     </div>`;
   }).join('');
