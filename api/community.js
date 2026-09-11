@@ -1,4 +1,5 @@
 const { requireAuth, isAdminEmail, noStore } = require('../lib/auth');
+const {protect}=require('../lib/security');
 const H = extra => ({apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,...extra});
 const root = () => `${process.env.SUPABASE_URL}/rest/v1`;
 const idOk = x => /^[0-9a-f-]{36}$/i.test(String(x||''));
@@ -8,7 +9,7 @@ async function profile(uid){return (await rows(`/users?select=*&auth_user_id=eq.
 async function listing(id){return (await rows(`/listings?select=*&id=eq.${id}&limit=1`))[0]||null;}
 async function conversation(id,uid){return (await rows(`/conversations?select=*&id=eq.${id}&or=(buyer_id.eq.${uid},seller_id.eq.${uid})&limit=1`))[0]||null;}
 module.exports=async(req,res)=>{
- noStore(res); const auth=await requireAuth(req,res); if(!auth)return;
+ noStore(res);if(!protect(req,res,{write:req.method!=='GET',limit:120,windowMs:60000,maxBytes:120000}))return; const auth=await requireAuth(req,res); if(!auth)return;
  try{
   const me=await profile(auth.id); if(!me)return res.status(403).json({ok:false,message:'Алдымен профильді толтырыңыз'});
   const mode=String(req.query?.mode||req.body?.action||'inbox');

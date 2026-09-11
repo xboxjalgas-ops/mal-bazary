@@ -295,8 +295,11 @@ async function imageToBase64(file){
   const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});
   const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=dataUrl;});
   const max=1400,scale=Math.min(1,max/Math.max(img.width,img.height)),canvas=document.createElement('canvas');
-  canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-  const out=canvas.toDataURL('image/jpeg',.82);return {imageBase64:out.split(',')[1],mimeType:'image/jpeg'};
+  canvas.width=Math.round(img.width*scale);canvas.height=Math.round(img.height*scale);const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  const label='МАЛ БАЗАРЫ  •  mal-bazary.vercel.app',short='МАЛ БАЗАРЫ',unit=Math.max(16,Math.round(canvas.width*.022));
+  ctx.save();ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(-Math.PI/7);ctx.globalAlpha=.13;ctx.fillStyle='#fff';ctx.font=`800 ${Math.max(28,unit*2.2)}px Arial`;ctx.textAlign='center';ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=6;ctx.fillText(short,0,0);ctx.restore();
+  ctx.save();ctx.font=`700 ${unit}px Arial`;const pad=Math.round(unit*.7),tw=ctx.measureText(label).width,x=canvas.width-tw-pad*2-14,y=canvas.height-unit-pad*2-14;ctx.fillStyle='rgba(10,28,20,.72)';if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y,tw+pad*2,unit+pad*2,Math.round(unit*.55));ctx.fill()}else ctx.fillRect(x,y,tw+pad*2,unit+pad*2);ctx.fillStyle='#fff';ctx.textBaseline='middle';ctx.fillText(label,x+pad,y+pad+unit/2);ctx.restore();
+  const out=canvas.toDataURL('image/jpeg',.84);return {imageBase64:out.split(',')[1],mimeType:'image/jpeg'};
 }
 async function uploadPostImages(files){
   const urls=[];

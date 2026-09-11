@@ -1,9 +1,10 @@
 const { requireAuth, isAdminEmail, noStore } = require('../lib/auth');
+const {protect}=require('../lib/security');
 const TYPES=['Сиыр','Қой','Жылқы','Тауық','Қаз','Үйрек','Қоян'];
 const headers=extra=>({apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,...extra});
 const validImages=images=>Array.isArray(images)&&images.length<=8&&images.every(x=>typeof x==='string'&&x.length<700&&x.startsWith(`${process.env.SUPABASE_URL}/storage/v1/object/public/listing-images/`));
 module.exports=async(req,res)=>{
- noStore(res); if(req.method!=='POST')return res.status(405).json({ok:false,message:'Method not allowed'});
+ noStore(res);if(!protect(req,res,{write:true,limit:20,windowMs:600000,maxBytes:6500000}))return; if(req.method!=='POST')return res.status(405).json({ok:false,message:'Method not allowed'});
  const authUser=await requireAuth(req,res); if(!authUser)return;
  const b=req.body||{},id=String(b.id||''); if(!/^[0-9a-f-]{36}$/i.test(id))return res.status(400).json({ok:false,message:'ID қате'});
  try{

@@ -1,10 +1,11 @@
 const { requireAuth, isAdminEmail, noStore } = require('../lib/auth');
+const {protect}=require('../lib/security');
 const CATEGORIES=['Тіркелу','Хабарландыру','Сурет','Қауіпсіздік','Техникалық қате','Шағым','Басқа'];
 const STATUSES=['new','in_progress','answered','closed'];
 const headers=extra=>({apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,...extra});
 const base=()=>`${process.env.SUPABASE_URL}/rest/v1/support_tickets`;
 module.exports=async(req,res)=>{
- noStore(res);const authUser=await requireAuth(req,res);if(!authUser)return;
+ noStore(res);if(!protect(req,res,{write:req.method!=='GET',limit:req.method==='GET'?60:12,windowMs:600000,maxBytes:100000}))return;const authUser=await requireAuth(req,res);if(!authUser)return;
  try{
   const pr=await fetch(`${process.env.SUPABASE_URL}/rest/v1/users?select=name,email,role&auth_user_id=eq.${authUser.id}&limit=1`,{headers:headers()});
   const profiles=pr.ok?await pr.json():[];const profile=profiles[0]||{};const isAdmin=profile.role==='admin'||isAdminEmail(authUser.email);
