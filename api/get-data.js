@@ -2,7 +2,7 @@ module.exports=async(req,res)=>{
  const type=req.query?.type||'listings',table=type==='products'?'products':'listings';
  const H={apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`};
  try{
-  const r=await fetch(`${process.env.SUPABASE_URL}/rest/v1/${table}?select=*&order=created_at.desc&limit=200`,{headers:H});
+  const r=await fetch(`${process.env.SUPABASE_URL}/rest/v1/${table}?select=*&seller_auth_id=not.is.null&moderation_status=eq.approved&order=created_at.desc&limit=200`,{headers:H});
   if(!r.ok)return res.status(502).json({ok:false,message:'Дерекқор қатесі'});const data=await r.json();
   const ids=[...new Set(data.map(x=>x.seller_auth_id).filter(Boolean))];let profiles=[],reviews=[];
   if(ids.length){

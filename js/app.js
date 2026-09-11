@@ -260,7 +260,7 @@ function renderListings(){
           ${canManage?`<button class="icon-btn" onclick="editListing('${l.id}')" title="Өңдеу">✏️</button><button class="icon-btn icon-btn-wide" onclick="toggleListingStatus('${l.id}','${isSold?'active':'sold'}')">${isSold?'Қайта ашу':'Сатылды'}</button><button class="icon-btn" onclick="deleteListing('${l.id}')" title="Өшіру">🗑</button>`:''}
         </div>
         <div class="row-price">${Number(l.price).toLocaleString('ru-RU')} ₸</div>
-        ${isSold?`${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="leaveReview('${l.id}')">⭐ Пікір</button>`:'<span class="modal-note">Сатылым жабық</span>'}`:`<div class="buyer-actions"><button class="btn btn-sky btn-small" onclick="openCallById('${l.id}')">📞 Қоңырау</button><a class="btn btn-ghost btn-small" href="https://chat.whatsapp.com/JUtX2clH0fH2sV5bquRFDM" target="_blank" rel="noopener noreferrer">WhatsApp топ</a>${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="startChat('${l.id}')">💬 Хат</button><button class="btn btn-ghost btn-small" onclick="makeOffer('${l.id}',${Number(l.price)})">💰 Ұсыныс</button><button class="btn btn-ghost btn-small" onclick="reserveListing('${l.id}')">🔒 Бронь</button>`:''}</div>`}
+        ${isSold?`${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="leaveReview('${l.id}')">⭐ Пікір</button>`:'<span class="modal-note">Сатылым жабық</span>'}`:`<div class="buyer-actions"><button class="btn btn-sky btn-small" onclick="openCallById('${l.id}')">📞 Қоңырау</button><a class="btn btn-ghost btn-small" href="https://wa.me/${String(l.phone||'').replace(/\D/g,'')}?text=${encodeURIComponent(`Сәлеметсіз бе! Мал Базары сайтындағы «${l.title}» хабарландыруы бойынша жазып тұрмын. ${listingUrl(l.id)}`)}" target="_blank" rel="noopener noreferrer">WhatsApp-қа жазу</a>${user&&!isOwn?`<button class="btn btn-ghost btn-small" onclick="startChat('${l.id}')">💬 Хат</button><button class="btn btn-ghost btn-small" onclick="makeOffer('${l.id}',${Number(l.price)})">💰 Ұсыныс</button><button class="btn btn-ghost btn-small" onclick="reserveListing('${l.id}')">🔒 Бронь</button>`:''}</div>`}
       </div>
     </div>`;
   }).join('');
@@ -448,7 +448,7 @@ function avatarHTML(avatarUrl, initials){ return avatarUrl ? `<img src="${escape
 function updateHeader(){
   const el=document.getElementById('headActions'); if(!user)return;
   const initials=user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()" aria-label="Көмек" title="Көмек">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small inbox-btn" onclick="openInbox()" aria-label="Хабарламалар" title="Хабарламалар"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="inbox-label">Хабарламалар</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div><span class="user-chip-name">${escapeHTML(user.name.split(' ')[0])}</span>${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div><button class="btn btn-primary post-header-btn" onclick="openModal('postModal')"><span aria-hidden="true">+</span> <span class="full-label">Хабарландыру беру</span><span class="short-label">Жариялау</span></button>`;
+  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()" aria-label="Көмек" title="Көмек">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small inbox-btn" onclick="openInbox()" aria-label="Хабарламалар" title="Хабарламалар"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="inbox-label">Хабарламалар</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div><span class="user-chip-name">${escapeHTML(user.name.split(' ')[0])}</span>${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div>${user.role==='admin'?'<a class="btn btn-ghost btn-small admin-header-link" href="admin.html">Басқару</a>':''}<button class="btn btn-primary post-header-btn" onclick="openModal('postModal')"><span aria-hidden="true">+</span> <span class="full-label">Хабарландыру беру</span><span class="short-label">Жариялау</span></button>`;
 }
 
 
@@ -558,7 +558,7 @@ async function submitPost(){
       const isEdit=Boolean(editingListingId);
       const res=await apiFetch(isEdit?'/api/update-post':'/api/create-post',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({kind:'listing',id:editingListingId,type,title,description:desc,price,location:loc,images,animal_details:{breed:document.getElementById('postBreed').value.trim(),age:document.getElementById('postAge').value.trim(),weight:document.getElementById('postWeight').value.trim(),health:document.getElementById('postHealth').value.trim(),documents:document.getElementById('postDocuments').value.trim()}})
+        body:JSON.stringify({kind:'listing',id:editingListingId,type,title,description:desc,price,location:loc,region:document.getElementById('postRegion').value,district:document.getElementById('postDistrict').value,village:document.getElementById('postVillage').value.trim(),images,animal_details:{breed:document.getElementById('postBreed').value.trim(),age:document.getElementById('postAge').value.trim(),weight:document.getElementById('postWeight').value.trim(),health:document.getElementById('postHealth').value.trim(),documents:document.getElementById('postDocuments').value.trim()}})
       });
       const data=await res.json();
       if(!res.ok||!data.ok){showToast(data.message||'Қате шықты');return;}
@@ -575,7 +575,7 @@ async function submitPost(){
       const images=await uploadPostImages(selectedProductFiles);
       const res = await apiFetch('/api/create-post', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ kind:'product', category: tag, name, description: desc, price, location: loc, images })
+        body: JSON.stringify({ kind:'product', category: tag, name, description: desc, price, location: loc, region:document.getElementById('prodRegion').value,district:document.getElementById('prodDistrict').value,village:document.getElementById('prodVillage').value.trim(), images })
       });
       const data = await res.json();
       if(!data.ok){ showToast(data.message || 'Қате шықты'); return; }
