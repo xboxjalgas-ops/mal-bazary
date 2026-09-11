@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');const read=f=>fs.readFileSync(f,'utf8');
+test('production platform migration removes demos and adds moderation',()=>{const s=read('supabase-platform.sql');assert.match(s,/moderation_status/);assert.match(s,/delete from listings where seller_auth_id is null/);assert.match(s,/blocked boolean/)});
+test('public API only returns authenticated approved listings',()=>{const s=read('api/get-data.js');assert.match(s,/seller_auth_id=not\.is\.null/);assert.match(s,/moderation_status=eq\.approved/)});
+test('admin API and dashboard support moderation and blocking',()=>{const api=read('api/admin.js'),html=read('admin.html');assert.match(api,/kind==='user'/);assert.match(api,/moderation_status/);assert.match(html,/Модерация және қауіпсіздік/)});
+test('locations, map, languages and direct whatsapp are wired',()=>{assert.match(read('js/locations.js'),/Түркістан/);assert.match(read('market.html'),/kazakhstanMap/);assert.match(read('js/i18n.js'),/Главная/);assert.match(read('js/app.js'),/wa\.me/)});
