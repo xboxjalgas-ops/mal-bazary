@@ -1,5 +1,5 @@
 const { requireAuth, isAdminEmail, noStore } = require('../lib/auth');
-const CATEGORIES=['Тіркелу','Хабарландыру','Сурет','Қауіпсіздік','Техникалық қате','Басқа'];
+const CATEGORIES=['Тіркелу','Хабарландыру','Сурет','Қауіпсіздік','Техникалық қате','Шағым','Басқа'];
 const STATUSES=['new','in_progress','answered','closed'];
 const headers=extra=>({apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,...extra});
 const base=()=>`${process.env.SUPABASE_URL}/rest/v1/support_tickets`;

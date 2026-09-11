@@ -1,11 +1,11 @@
 /* Мал Базары: чат, ұсыныс, дүкен, рейтинг, құжат, сүзгі және бронь */
 let marketplaceInbox={conversations:[],messages:[],offers:[],reservations:[]},marketplaceMeId='',activeConversationId=null,chatPoll=null;
-let filterLocation='',filterMin=0,filterMax=0,filterVerified=false;
+let filterRegion='',filterLocation='',filterMin=0,filterMax=0,filterVerified=false;
 const TRADE_STATUS={pending:'Күтуде',accepted:'Қабылданды',rejected:'Қабылданбады',cancelled:'Бас тартылды',completed:'Аяқталды'};
 function ensureMarketplaceLogin(){if(user)return true;openModal('registerModal');showToast('Алдымен Google арқылы кіріңіз');return false;}
 function toggleAdvancedFilters(){const e=document.getElementById('advancedFilters');e.hidden=!e.hidden;}
-function applyAdvancedFilters(){filterLocation=document.getElementById('filterLocation').value.trim().toLowerCase();filterMin=Number(document.getElementById('filterMinPrice').value)||0;filterMax=Number(document.getElementById('filterMaxPrice').value)||0;filterVerified=document.getElementById('filterVerified').checked;renderListings();}
-function resetAdvancedFilters(){['filterLocation','filterMinPrice','filterMaxPrice'].forEach(x=>document.getElementById(x).value='');document.getElementById('filterVerified').checked=false;filterLocation='';filterMin=filterMax=0;filterVerified=false;renderListings();}
+function applyAdvancedFilters(){filterRegion=document.getElementById('filterRegion').value.trim().toLowerCase();filterLocation=document.getElementById('filterLocation').value.trim().toLowerCase();filterMin=Number(document.getElementById('filterMinPrice').value)||0;filterMax=Number(document.getElementById('filterMaxPrice').value)||0;filterVerified=document.getElementById('filterVerified').checked;renderListings();}
+function resetAdvancedFilters(){['filterRegion','filterLocation','filterMinPrice','filterMaxPrice'].forEach(x=>document.getElementById(x).value='');document.getElementById('filterVerified').checked=false;filterRegion='';filterLocation='';filterMin=filterMax=0;filterVerified=false;renderListings();}
 async function communityFetch(mode,method='GET',body=null){const url=`/api/community?mode=${mode}`;const r=await apiFetch(url,{method,headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.message||'Әрекет орындалмады');return d;}
 async function openInbox(){if(!ensureMarketplaceLogin())return;openModal('inboxModal');document.getElementById('communityContent').innerHTML='<div class="empty-note">Жүктелуде...</div>';try{marketplaceInbox=await communityFetch('inbox');marketplaceMeId=marketplaceInbox.me_id||marketplaceMeId;renderCommunity('chats');}catch(e){showToast(e.message);}}
 function showCommunityTab(tab,btn){document.querySelectorAll('.community-tabs .chip').forEach(x=>x.classList.remove('active'));btn?.classList.add('active');renderCommunity(tab);}
@@ -25,3 +25,11 @@ async function verifySeller(seller_id,verified){try{await communityFetch('verify
 async function saveShopProfile(){if(!ensureMarketplaceLogin())return;const shop_name=document.getElementById('shopName').value.trim(),bio=document.getElementById('shopBio').value.trim();try{const d=await communityFetch('profile','PATCH',{shop_name,bio});user.shopName=d.profile.shop_name||'';user.bio=d.profile.bio||'';showToast('Дүкен профилі сақталды');}catch(e){showToast(e.message);}}
 // Профиль ашылғанда дүкен өрістерін толтыру
 const originalOpenProfileModal=openProfileModal;openProfileModal=function(){originalOpenProfileModal();document.getElementById('shopName').value=user?.shopName||'';document.getElementById('shopBio').value=user?.bio||'';};
+
+async function reportListing(id){
+  if(!ensureMarketplaceLogin())return;
+  const listing=listings.find(x=>String(x.id)===String(id));if(!listing)return;
+  const reason=(prompt('Шағым себебін жазыңыз (кемінде 10 таңба):','')||'').trim();if(!reason)return;
+  if(reason.length<10){showToast('Шағым себебін толығырақ жазыңыз');return;}
+  try{const r=await apiFetch('/api/support',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:'Шағым',subject:`Хабарландыруға шағым: ${listing.title}`.slice(0,120),message:`Хабарландыру ID: ${listing.id}\nСілтеме: ${listingUrl(listing.id)}\nСебеп: ${reason}`})});const d=await r.json();if(!r.ok||!d.ok)throw new Error(d.message||'Шағым жіберілмеді');showToast('Шағым қолдау тобына жіберілді');}catch(e){showToast(e.message);}
+}
