@@ -124,7 +124,7 @@ footer{border-top:2px solid var(--border);padding:28px 20px;}
   display:grid;grid-template-columns:minmax(0,610px) 1fr;gap:48px;align-items:center;
   background:
     linear-gradient(90deg,rgba(18,29,24,.90) 0%,rgba(18,29,24,.72) 48%,rgba(18,29,24,.20) 100%),
-    url('../assets/home/nature.svg') center 52%/cover no-repeat;
+    url('../assets/brand/market-hero.svg') center 58%/cover no-repeat;
   color:#fff;
 }
 .hero-copy{background:rgba(14,24,20,.34);border:1px solid rgba(255,255,255,.22);border-radius:18px;padding:36px;backdrop-filter:blur(8px);box-shadow:0 20px 48px rgba(0,0,0,.22)}
@@ -137,8 +137,8 @@ footer{border-top:2px solid var(--border);padding:28px 20px;}
 .cat-pill img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease}.cat-pill:hover img{transform:scale(1.05)}
 .cat-pill span{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;color:#fff;font-size:14px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,.6)}
 html[data-theme="dark"] .cat-strip{background:var(--surface)}
-@media(max-width:900px){.hero{grid-template-columns:1fr;min-height:560px;padding-top:56px;padding-bottom:56px;background-position:58% center}.hero-copy{max-width:620px}.hero-photo-note{display:none}.cat-strip{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:520px){.hero{min-height:610px;padding:28px 16px;background-position:62% center}.hero-copy{padding:24px 20px;border-radius:14px}.cat-strip{grid-template-columns:repeat(2,1fr);gap:10px;padding:10px}.cat-pill{aspect-ratio:5/4}.cat-pill span{font-size:14px}.hero-actions .btn{width:100%;justify-content:center}}
+@media(max-width:900px){.hero{grid-template-columns:1fr;min-height:560px;padding-top:56px;padding-bottom:56px;background-position:62% center}.hero-copy{max-width:620px}.hero-photo-note{display:none}.cat-strip{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:520px){.hero{min-height:650px;padding:28px 16px;background-image:linear-gradient(180deg,rgba(16,27,21,.48),rgba(16,27,21,.80)),url('../assets/brand/market-hero-mobile.svg');background-position:center;background-size:cover}.hero-copy{padding:24px 20px;border-radius:14px;background:rgba(14,24,20,.58)}.cat-strip{grid-template-columns:repeat(2,1fr);gap:10px;padding:10px}.cat-pill{aspect-ratio:5/4}.cat-pill span{font-size:14px}.hero-actions .btn{width:100%;justify-content:center}}
 
 /* Photo-rich steps, product categories and CTA */
 .steps{gap:18px}.step{padding:0;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden}.step-photo{width:100%;height:150px;object-fit:cover;display:block}.step-content{padding:20px}.step-num{position:absolute;margin-top:-52px;background:rgba(20,30,25,.82);color:#fff;border-radius:10px;padding:7px 10px;font-size:23px;backdrop-filter:blur(4px)}.step h3{margin-top:4px}
