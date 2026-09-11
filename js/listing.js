@@ -4,7 +4,7 @@ function money(value){return Number(value||0).toLocaleString('ru-RU')+' ₸';}
 function detailUrl(){return location.href.split('#')[0];}
 function showDetailToast(message){const t=document.getElementById('toast');t.textContent=message;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 async function authorizedFetch(url,options={}){const token=await authAccessToken();return fetch(url,{...options,headers:{...(options.headers||{}),...(token?{Authorization:`Bearer ${token}`}:{})}});}
-function shareDetail(){if(!currentListing)return;const text=`${currentListing.title} — ${money(currentListing.price)}, ${currentListing.location}`;if(navigator.share){navigator.share({title:currentListing.title,text,url:detailUrl()}).catch(()=>{});return;}window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${detailUrl()}`)}`,'_blank','noopener');}
+function shareDetail(){if(!currentListing)return;const text=`${currentListing.title} — ${money(currentListing.price)}, ${currentListing.location}`;window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${detailUrl()}`)}`,'_blank','noopener');}
 async function reportDetail(){
  if(!currentListing)return;const token=await authAccessToken();if(!token){showDetailToast('Шағым жіберу үшін нарық бетінде кіріңіз');setTimeout(()=>location.href=`market.html?return=${encodeURIComponent(location.pathname+location.search)}`,900);return;}
  const reason=(prompt('Шағым себебін жазыңыз (кемінде 10 таңба):','')||'').trim();if(!reason)return;if(reason.length<10){showDetailToast('Себепті толығырақ жазыңыз');return;}
