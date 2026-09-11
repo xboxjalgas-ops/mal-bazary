@@ -1,4 +1,4 @@
-const CACHE='mal-bazary-v2';
+const CACHE='mal-bazary-v3';
 const SHELL=['/','/index.html','/market.html','/listing.html','/css/style.css','/css/landing.css','/js/effects.js','/js/pwa.js','/manifest.webmanifest','/favicon.svg','/assets/brand/mal-bazary-mark.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
