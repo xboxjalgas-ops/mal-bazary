@@ -1,10 +1,11 @@
 const { requireAuth, noStore } = require('../lib/auth');
+const {protect}=require('../lib/security');
 const ALLOWED={
 'image/jpeg':{ext:'jpg',test:b=>b[0]===0xff&&b[1]===0xd8&&b[2]===0xff},
 'image/png':{ext:'png',test:b=>b.slice(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))},
 'image/webp':{ext:'webp',test:b=>b.slice(0,4).toString()==='RIFF'&&b.slice(8,12).toString()==='WEBP'}};
 module.exports=async(req,res)=>{
- noStore(res); if(req.method!=='POST')return res.status(405).json({ok:false,message:'Method not allowed'});
+ noStore(res);if(!protect(req,res,{write:true,limit:10,windowMs:600000,maxBytes:3500000}))return; if(req.method!=='POST')return res.status(405).json({ok:false,message:'Method not allowed'});
  const authUser=await requireAuth(req,res); if(!authUser)return;
  const mime=String(req.body?.mimeType||''),raw=String(req.body?.imageBase64||'').trim(),format=ALLOWED[mime];
  if(!format||!raw||raw.length>3_000_000)return res.status(400).json({ok:false,message:'JPEG, PNG немесе WEBP суретін таңдаңыз'});

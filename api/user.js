@@ -1,9 +1,11 @@
 const { requireAuth, normalizePhone, isAdminEmail, noStore } = require('../lib/auth');
+const {protect}=require('../lib/security');
 const h = extra => ({ apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, ...extra });
 const base = () => `${process.env.SUPABASE_URL}/rest/v1/users`;
 
 module.exports = async (req, res) => {
   noStore(res);
+  if(!protect(req,res,{write:req.method!=='GET',limit:30,windowMs:600000,maxBytes:100000}))return;
   const authUser = await requireAuth(req, res); if (!authUser) return;
   try {
     if (req.method === 'GET') {

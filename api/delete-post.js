@@ -1,6 +1,7 @@
 const { requireAuth, isAdminEmail, noStore } = require('../lib/auth');
+const {protect}=require('../lib/security');
 module.exports = async (req,res)=>{
-  noStore(res);
+  noStore(res);if(!protect(req,res,{write:true,limit:20,windowMs:600000,maxBytes:50000}))return;
   if(req.method!=='POST')return res.status(405).json({ok:false,message:'Method not allowed'});
   const authUser=await requireAuth(req,res); if(!authUser)return;
   const {kind,id}=req.body||{};
