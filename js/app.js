@@ -213,8 +213,8 @@ function listingUrl(id){return `${location.origin}/listing.html?id=${encodeURICo
 function shareListing(id){
   const l=listings.find(x=>String(x.id)===String(id));if(!l)return;
   const url=listingUrl(l.id),text=`${l.title} — ${Number(l.price).toLocaleString('ru-RU')} ₸, ${l.loc}`;
-  if(navigator.share){navigator.share({title:l.title,text,url}).catch(()=>{});return;}
-  window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`,'_blank','noopener');
+  const whatsappUrl=`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`;
+  window.open(whatsappUrl,'_blank','noopener');
 }
 function renderPriceStats(){
   const box=document.getElementById('priceStats');if(!box)return;
