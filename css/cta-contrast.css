@@ -1,4 +1,16 @@
 /* CTA contrast fix: make secondary CTA buttons visible on dark photo background */
+.cta-band .cta-actions{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.cta-band .cta-install-row{
+  display:flex;
+  justify-content:center;
+  margin-top:12px;
+}
 .cta-band .btn-ghost{
   background:#fff;
   color:var(--primary-dark);
@@ -10,6 +22,18 @@
   border-color:#F1EEE2;
   box-shadow:var(--shadow-md);
 }
-.cta-band .btn-ghost[hidden]{
-  display:none;
+.cta-band .btn-install{
+  min-width:min(100%, 368px);
+  justify-content:center;
+}
+@media(max-width:520px){
+  .cta-band .cta-actions,
+  .cta-band .cta-install-row{
+    width:100%;
+  }
+  .cta-band .cta-actions .btn,
+  .cta-band .cta-install-row .btn{
+    width:100%;
+    justify-content:center;
+  }
 }
