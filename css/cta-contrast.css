@@ -1,0 +1,15 @@
+/* CTA contrast fix: make secondary CTA buttons visible on dark photo background */
+.cta-band .btn-ghost{
+  background:#fff;
+  color:var(--primary-dark);
+  border-color:#fff;
+  box-shadow:var(--shadow-sm);
+}
+.cta-band .btn-ghost:hover{
+  background:#F1EEE2;
+  border-color:#F1EEE2;
+  box-shadow:var(--shadow-md);
+}
+.cta-band .btn-ghost[hidden]{
+  display:none;
+}
