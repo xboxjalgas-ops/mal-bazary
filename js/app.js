@@ -106,21 +106,25 @@ function normalizeProduct(row){
 }
 
 async function loadListings(){
+  window.mbSkeleton?.('listingsList', 4);
   try{
     const res = await fetch('/api/get-data?type=listings');
     const data = await res.json();
     if(data.ok){ listings = data.listings.map(normalizeListing); }
   }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
   renderListings();
+  window.mbLoaded?.('listingsList');
 }
 
 async function loadUserProducts(){
+  ['feedGrid','medGrid','coopGrid'].forEach(id=>window.mbSkeleton?.(id, 2));
   try{
     const res = await fetch('/api/get-data?type=products');
     const data = await res.json();
     if(data.ok){ userProducts = data.products.map(normalizeProduct); }
   }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
   renderProducts();
+  ['feedGrid','medGrid','coopGrid'].forEach(id=>window.mbLoaded?.(id));
 }
 
 let user = null; // {name, phone}
@@ -303,10 +307,16 @@ async function imageToBase64(file){
 }
 async function uploadPostImages(files){
   const urls=[];
-  for(const file of files){
-    const payload=await imageToBase64(file);
-    const r=await apiFetch('/api/upload-listing-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.message||'Сурет жүктелмеді');urls.push(data.url);
+  window.mbUploadProgress?.(0,files.length);
+  try{
+    for(const [index,file] of files.entries()){
+      const payload=await imageToBase64(file);
+      const r=await apiFetch('/api/upload-listing-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await r.json();if(!r.ok||!data.ok)throw new Error(data.message||'Сурет жүктелмеді');urls.push(data.url);
+      window.mbUploadProgress?.(index+1,files.length);
+    }
+  }finally{
+    setTimeout(()=>window.mbUploadProgress?.(null),250);
   }
   return urls;
 }
