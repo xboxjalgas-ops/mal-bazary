@@ -1,3 +1,6 @@
+.inbox-btn{position:relative}
+.inbox-count{position:absolute;top:-7px;right:-7px;display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border:2px solid var(--surface);border-radius:999px;background:#b42318;color:#fff;font-size:11px;font-weight:800;line-height:1}
+.inbox-count[hidden]{display:none}
 :root{
   --bg:#EAE2CC;
   --surface:#FFFCF5;

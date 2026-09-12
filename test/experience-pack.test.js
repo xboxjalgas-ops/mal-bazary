@@ -24,6 +24,6 @@ test('experience pack includes resilient feedback and reduced-motion support', (
 
 test('offline shell caches the experience layer', () => {
   const sw = read('service-worker.js');
-  assert.match(sw, /mal-bazary-v9/);
+  assert.match(sw, /mal-bazary-v10/);
   assert.match(sw, /js\/experience\.js/);
 });

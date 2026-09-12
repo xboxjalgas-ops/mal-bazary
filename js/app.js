@@ -144,12 +144,40 @@ function getFavorites(){
   try{ return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }catch(e){ return []; }
 }
 function isFavorite(id){ return getFavorites().includes(String(id)); }
-function toggleFavorite(id){
+function saveFavorites(favorites){
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify([...new Set(favorites.map(String))]));
+}
+async function syncFavorites(){
+  if(!user)return;
+  try{
+    const local=getFavorites();
+    const response=await apiFetch('/api/preferences');
+    const data=await response.json();
+    if(!response.ok||!data.ok)return;
+    const remote=Array.isArray(data.favorites)?data.favorites.map(String):[];
+    const merged=[...new Set([...remote,...local])];
+    saveFavorites(merged);
+    renderListings();
+    for(const listingId of local.filter(id=>!remote.includes(String(id)))){
+      await apiFetch('/api/preferences',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({listing_id:String(listingId),favorite:true})});
+    }
+  }catch{/* Желі қалпына келгенде келесі кіруде қайта синхрондалады. */}
+}
+async function toggleFavorite(id){
   id = String(id);
   let favs = getFavorites();
-  favs = favs.includes(id) ? favs.filter(x=>x!==id) : [...favs, id];
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+  const favorite=!favs.includes(id);
+  favs = favorite ? [...favs, id] : favs.filter(x=>x!==id);
+  saveFavorites(favs);
   renderListings();
+  if(user){
+    try{
+      const response=await apiFetch('/api/preferences',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({listing_id:id,favorite})});
+      if(!response.ok)throw new Error('sync');
+    }catch{
+      showToast('Таңдаулы құрылғыда сақталды, синхрондау кейін жалғасады');
+    }
+  }
 }
 function toggleFavoritesOnly(){
   favoritesOnly = !favoritesOnly;
@@ -432,7 +460,7 @@ async function handleAuthenticatedUser(){
   const r=await apiFetch('/api/user'), data=await r.json();
   if(data.ok&&data.exists){
     user={name:data.name,phone:data.phone,email:data.email,role:data.role||'user',avatarUrl:data.avatar_url||null,shopName:data.shop_name||'',bio:data.bio||'',verified:Boolean(data.verified)};
-    updateHeader(); closeModal('registerModal'); renderListings(); renderProducts(); showToast('Қош келдіңіз, '+data.name+'!');
+    updateHeader(); closeModal('registerModal'); renderListings(); renderProducts(); syncFavorites(); window.mbStartAlerts?.(); showToast('Қош келдіңіз, '+data.name+'!');
   }else showProfileSetup(identity);
 }
 async function finishProfileSetup(){
@@ -443,7 +471,7 @@ async function finishProfileSetup(){
     const r=await apiFetch('/api/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,phone})});
     const data=await r.json(); if(!r.ok||!data.ok){showToast(data.message||'Профиль сақталмады');return;}
     user={name:data.name,phone:data.phone,email:data.email,role:data.role||'user',avatarUrl:data.avatar_url||null,shopName:data.shop_name||'',bio:data.bio||'',verified:Boolean(data.verified)};
-    updateHeader();closeModal('registerModal');renderListings();renderProducts();showToast('Профиль дайын!');
+    updateHeader();closeModal('registerModal');renderListings();renderProducts();syncFavorites();window.mbStartAlerts?.();showToast('Профиль дайын!');
   }catch{showToast('Байланыс қатесі');}
 }
 async function initializeAuth(){
@@ -452,7 +480,7 @@ async function initializeAuth(){
 }
 
 async function logout(){
-  await signOutAuth(); user=null; closeModal('profileModal');
+  window.mbStopAlerts?.(); await signOutAuth(); user=null; closeModal('profileModal');
   document.getElementById('headActions').innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small" onclick="openModal('registerModal')">Кіру</button><button class="btn btn-primary" onclick="openModal('postModal')">+ <span class="full-label">Хабарландыру беру</span></button>`;
   showToast('Шықтыңыз');renderListings();renderProducts();
 }
@@ -461,7 +489,7 @@ function avatarHTML(avatarUrl, initials){ return avatarUrl ? `<img src="${escape
 function updateHeader(){
   const el=document.getElementById('headActions'); if(!user)return;
   const initials=user.name.split(' ').map(s=>s[0]).join('').slice(0,2).toUpperCase();
-  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()" aria-label="Көмек" title="Көмек">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small inbox-btn" onclick="openInbox()" aria-label="Хабарламалар" title="Хабарламалар"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="inbox-label">Хабарламалар</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div><span class="user-chip-name">${escapeHTML(user.name.split(' ')[0])}</span>${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div>${user.role==='admin'?'<a class="btn btn-ghost btn-small admin-header-link" href="admin.html">Басқару</a>':''}<button class="btn btn-primary post-header-btn" onclick="openModal('postModal')"><span aria-hidden="true">+</span> <span class="full-label">Хабарландыру беру</span><span class="short-label">Жариялау</span></button>`;
+  el.innerHTML=`<button class="btn btn-ghost btn-small help-btn" onclick="openSupport()" aria-label="Көмек" title="Көмек">❓ <span class="help-label">Көмек</span></button><button class="btn btn-ghost btn-small inbox-btn" onclick="openInbox()" aria-label="Хабарламалар" title="Хабарламалар"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg><span class="inbox-label">Хабарламалар</span><span class="inbox-count" id="inboxCount" hidden>0</span></button><div class="user-chip" style="cursor:pointer;" onclick="openProfileModal()" title="Профиль"><div class="avatar">${avatarHTML(user.avatarUrl,initials)}</div><span class="user-chip-name">${escapeHTML(user.name.split(' ')[0])}</span>${user.role==='admin'?'<span class="header-admin-badge">Admin</span>':''}</div>${user.role==='admin'?'<a class="btn btn-ghost btn-small admin-header-link" href="admin.html">Басқару</a>':''}<button class="btn btn-primary post-header-btn" onclick="openModal('postModal')"><span aria-hidden="true">+</span> <span class="full-label">Хабарландыру беру</span><span class="short-label">Жариялау</span></button>`;
 }
 
 
