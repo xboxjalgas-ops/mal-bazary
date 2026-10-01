@@ -225,3 +225,15 @@ repeating-linear-gradient(90deg,#3f2b1d 0 9%,#513824 9% 18%);border-color:#25180
 @media(max-width:520px){.hero-story{height:290px;border-radius:18px}.hero-story-frame figcaption{left:18px;right:18px;bottom:90px}.hero-story-frame figcaption strong{font-size:23px}.hero-story-controls{top:58px;bottom:auto;padding:8px 14px;gap:8px}.hero-story-toggle{padding:0 10px}.hero-story-header{top:12px;left:12px;right:12px}}
 @media(prefers-reduced-motion:reduce){.hero-story-frame{transition:none}.hero-story-frame.is-current img{animation:none;transform:none}.hero-story-steps i{transition:none}.hero-story-toggle{display:none}}
 html[data-mb-calm="on"] .hero-story-toggle{display:none}
+
+/* Slow 3D landscape behind the landing content; the original hero background stays as a fallback. */
+.hero>.hero-depth{position:absolute;inset:-4%;z-index:0;overflow:hidden;pointer-events:none;perspective:950px;transform:translate3d(calc(var(--parallax-x,0px)*.5),calc(var(--parallax-y,0px)*.5),0);transition:transform .3s ease-out}
+.hero-depth-scene,.hero-depth-light{position:absolute;inset:-6%;display:block;backface-visibility:hidden}
+.hero-depth-scene{background:linear-gradient(90deg,rgba(18,29,24,.90),rgba(18,29,24,.72) 48%,rgba(18,29,24,.20)),url('../assets/brand/market-hero.svg') center 58%/cover no-repeat;animation:hero-depth-scene 22s ease-in-out infinite alternate}
+.hero-depth-light{background:radial-gradient(ellipse at 82% 22%,rgba(255,216,151,.26),transparent 37%),radial-gradient(ellipse at 62% 94%,rgba(233,203,139,.10),transparent 47%);mix-blend-mode:screen;animation:hero-depth-light 17s ease-in-out infinite alternate}
+@keyframes hero-depth-scene{from{transform:translate3d(-1.2%,-.5%,-80px) rotateY(-2deg) scale(1.18)}to{transform:translate3d(1.2%,.5%,25px) rotateY(2deg) scale(1.10)}}
+@keyframes hero-depth-light{from{transform:translate3d(2%,-1%,95px) rotateY(2deg)}to{transform:translate3d(-2%,1%,45px) rotateY(-2deg)}}
+@media(max-width:520px){.hero-depth-scene{background-image:linear-gradient(180deg,rgba(16,27,21,.48),rgba(16,27,21,.80)),url('../assets/brand/market-hero-mobile.svg')}.hero-depth-light{opacity:.55}}
+@media(prefers-reduced-motion:reduce){.hero>.hero-depth{transform:none;transition:none}.hero-depth-scene,.hero-depth-light{animation:none;transform:none}}
+html[data-mb-calm="on"] .hero>.hero-depth{transform:none;transition:none}
+html[data-mb-calm="on"] .hero-depth-scene,html[data-mb-calm="on"] .hero-depth-light{animation:none;transform:none}
