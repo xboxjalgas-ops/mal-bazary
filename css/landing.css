@@ -196,3 +196,31 @@ repeating-linear-gradient(90deg,#3f2b1d 0 9%,#513824 9% 18%);border-color:#25180
 @media(prefers-reduced-motion:reduce){
   .hero{--hero-p:0!important}.market-gate{height:auto;background:var(--bg);color:var(--ink)}.gate-stage{position:relative;height:auto;overflow:visible;background:var(--bg)}.gate-market{position:relative;inset:auto;padding:56px max(16px,calc((100vw - 1080px)/2));transform:none;filter:none;background:var(--bg)}.gate-door,.gate-seal,.gate-line{display:none}.fx-ready [data-scroll-step]{opacity:1;transform:none;filter:none}
 }
+
+/* A small, controllable visual story in the landing hero. */
+.hero-story{position:relative;justify-self:end;width:min(100%,410px);height:460px;overflow:hidden;border:1px solid rgba(255,255,255,.36);border-radius:24px;background:#20382d;box-shadow:0 28px 65px rgba(0,0,0,.34);isolation:isolate}
+.hero-story-frames,.hero-story-frame,.hero-story-frame img{position:absolute;inset:0;width:100%;height:100%}
+.hero-story-frame{margin:0;opacity:0;visibility:hidden;transition:opacity .85s ease,visibility .85s ease}
+.hero-story-frame.is-current{opacity:1;visibility:visible;z-index:1}
+.hero-story-frame img{object-fit:cover;transform:scale(1.05)}
+.hero-story-frame.is-current img{animation:story-camera 5.5s ease-out both}
+.hero-story-frame::after{content:'';position:absolute;inset:36% 0 0;background:linear-gradient(transparent,rgba(5,18,13,.16) 25%,rgba(5,18,13,.9));pointer-events:none}
+.hero-story-frame figcaption{position:absolute;left:26px;right:26px;bottom:87px;z-index:2;display:grid;gap:7px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+.hero-story-frame figcaption span{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#f7d596}
+.hero-story-frame figcaption strong{font-family:'PT Serif',serif;font-size:clamp(26px,2.7vw,34px);line-height:1.15;color:#fff}
+.hero-story-header{position:absolute;top:18px;left:18px;right:18px;z-index:3;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;font-weight:800;letter-spacing:.08em;color:#fff;text-transform:uppercase;text-shadow:0 1px 8px #10241b}
+.hero-story-header>span:first-child{padding:8px 12px;border:1px solid rgba(255,255,255,.38);border-radius:99px;background:rgba(9,32,22,.55);backdrop-filter:blur(5px)}
+.hero-story-count{font-variant-numeric:tabular-nums}.hero-story-count b{color:#f7d596}
+.hero-story-controls{position:absolute;z-index:3;bottom:0;left:0;right:0;display:flex;align-items:center;gap:11px;padding:16px 20px 19px;color:#fff}
+.hero-story-steps{display:flex;gap:7px;flex:1}.hero-story-steps i{height:4px;flex:1;border-radius:9px;background:rgba(255,255,255,.44);transition:background .3s ease}.hero-story-steps i.is-current{background:#f7d596}
+.hero-story-next,.hero-story-toggle{min-height:44px;border:1px solid rgba(255,255,255,.62);border-radius:999px;background:rgba(8,28,19,.62);color:#fff;cursor:pointer;font-family:Inter,sans-serif;font-weight:800;backdrop-filter:blur(5px)}
+.hero-story-next{width:44px;font-size:32px;line-height:1}.hero-story-toggle{padding:0 14px;font-size:12px;white-space:nowrap}
+.hero-story-next:hover,.hero-story-toggle:hover{background:#f7d596;border-color:#f7d596;color:#1c2b1f}
+.hero-story-next:focus-visible,.hero-story-toggle:focus-visible{outline:3px solid #f7d596;outline-offset:3px}
+.story-when-paused,.hero-story.is-paused .story-when-playing{display:none}.hero-story.is-paused .story-when-paused{display:inline}
+.hero-story.is-paused .hero-story-frame.is-current img{animation-play-state:paused}
+@keyframes story-camera{from{transform:scale(1.09) translateX(-1.5%)}to{transform:scale(1.02) translateX(1%)} }
+@media(max-width:900px){.hero-story{justify-self:start;width:min(100%,620px);height:360px}.hero{gap:22px}}
+@media(max-width:520px){.hero-story{height:290px;border-radius:18px}.hero-story-frame figcaption{left:18px;right:18px;bottom:74px}.hero-story-frame figcaption strong{font-size:23px}.hero-story-controls{padding:12px 14px 14px;gap:8px}.hero-story-toggle{padding:0 10px}.hero-story-header{top:12px;left:12px;right:12px}}
+@media(prefers-reduced-motion:reduce){.hero-story-frame{transition:none}.hero-story-frame.is-current img{animation:none;transform:none}.hero-story-steps i{transition:none}.hero-story-toggle{display:none}}
+html[data-mb-calm="on"] .hero-story-toggle{display:none}

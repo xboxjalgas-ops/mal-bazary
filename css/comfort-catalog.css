@@ -1,0 +1,40 @@
+/* Additive accessibility and catalog layer. Original styles remain intact. */
+.mb-comfort-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px auto;padding:12px 16px;max-width:1080px;background:var(--surface,#fff);color:var(--ink,#17251b);border:1px solid var(--border,#bac7b6);border-radius:12px;font-size:16px;line-height:1.5}
+.mb-comfort-bar button{min-height:48px;padding:10px 16px;border:2px solid var(--primary,#3f5a38);border-radius:10px;background:var(--surface,#fff);color:var(--ink,#17251b);font:inherit;font-weight:700;cursor:pointer}
+.mb-comfort-bar button[aria-pressed="true"]{background:#294b2f;color:white;border-color:#294b2f}
+.mb-comfort-status{flex-basis:100%;font-size:14px}
+.mb-comfort-status:empty{display:none}
+.mb-catalog-filter{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0;padding:14px;background:var(--surface,#fff);border:1px solid var(--border,#bac7b6);border-radius:12px;color:var(--ink,#17251b)}
+.mb-catalog-filter label{font-weight:700;font-size:16px}
+.mb-catalog-filter select,.mb-catalog-filter input,.mb-product-picker{min-width:0;max-width:100%;min-height:48px;padding:10px;font:inherit;border:1px solid var(--border,#bac7b6);border-radius:8px;background:var(--surface,#fff);color:var(--ink,#17251b)}
+.mb-catalog-filter select,.mb-catalog-filter input{flex:1 1 220px}
+.mb-catalog-note{flex-basis:100%;margin:0;font-size:14px;line-height:1.5;color:var(--ink-soft,#435246)}
+.mb-product-picker{width:100%}
+.mb-field-error{display:block;color:#a22518;font-size:15px;line-height:1.5;margin:6px 0}
+[data-theme="dark"] .mb-field-error{color:#ffb4a8}
+[aria-invalid="true"]{border-color:#a22518!important}
+.mb-draft-actions{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0}
+:where(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #b86500!important;outline-offset:4px!important}
+.mb-choice-feedback{animation:mb-choice-highlight .65s ease-out}
+@keyframes mb-choice-highlight{from{box-shadow:0 0 0 5px #cfaa49}to{box-shadow:0 0 0 0 transparent}}
+html[data-mb-easy="on"] body{line-height:1.65}
+html[data-mb-easy="on"] :is(.lead,.row-title,.prod-name,.row-price,.prod-price,.field label,.row-meta,.prod-meta,.prod-desc,.animal-facts,.trust-badge,.modal-note,.empty-note,.mb-catalog-note){font-size:18px!important;line-height:1.6!important}
+html[data-mb-easy="on"] :is(button.btn,button.chip,button.tab,input,select,textarea,.icon-btn,.seller-link){min-height:48px;font-size:18px!important}
+html[data-mb-easy="on"] .row-meta,html[data-mb-easy="on"] .owner-actions{flex-wrap:wrap;gap:10px}
+html[data-mb-easy="on"] .row-body{min-width:0;overflow-wrap:anywhere}
+html[data-mb-easy="on"] .modal{width:min(700px,calc(100vw - 24px));max-height:90dvh;overflow:auto}
+html[data-mb-calm="on"],html[data-mb-calm="on"] *{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+html[data-mb-calm="on"] :is(.fx-reveal,[data-scroll-step]){opacity:1!important;transform:none!important;filter:none!important}
+html[data-mb-calm="on"] :is(.mb-page-curtain,.fx-progress,.fx-ripple,.gate-door,.gate-seal,.gate-line,.hero-haze){display:none!important}
+html[data-mb-calm="on"] .market-gate{height:auto!important}
+html[data-mb-calm="on"] .gate-stage{position:relative!important;height:auto!important;overflow:visible!important;background:var(--bg)!important}
+html[data-mb-calm="on"] .gate-market{position:relative!important;inset:auto!important;padding:32px 16px!important;transform:none!important;filter:none!important;background:var(--bg)!important;color:var(--ink)!important}
+html[data-mb-calm="on"] .hero{--hero-p:0!important;--parallax-x:0px!important;--parallax-y:0px!important;--hero-x:0px!important}
+@media(max-width:700px){.mb-comfort-bar{margin:10px 12px}.mb-comfort-bar>strong{flex-basis:100%}.mb-comfort-bar button{flex:1 1 140px}html[data-mb-easy="on"] .row-card{display:flex;flex-wrap:wrap}html[data-mb-easy="on"] .row-actions{width:100%}html[data-mb-easy="on"] .details-grid,html[data-mb-easy="on"] .location-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.mb-choice-feedback{animation:none}}
+@media(max-width:520px){
+  .landing-page .landing-headrow{flex-wrap:wrap}
+  .landing-page .landing-headrow .logo{flex:1 1 150px}
+  .landing-page .landing-headrow .language-switch{margin-left:auto}
+  .landing-page .landing-headrow .head-actions{flex-basis:100%;justify-content:flex-end}
+}

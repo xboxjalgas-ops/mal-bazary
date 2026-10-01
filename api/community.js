@@ -8,11 +8,18 @@ async function rows(path, options={}){const r=await fetch(`${root()}${path}`,{..
 async function profile(uid){return (await rows(`/users?select=*&auth_user_id=eq.${uid}&limit=1`))[0]||null;}
 async function listing(id){return (await rows(`/listings?select=*&id=eq.${id}&limit=1`))[0]||null;}
 async function conversation(id,uid){return (await rows(`/conversations?select=*&id=eq.${id}&or=(buyer_id.eq.${uid},seller_id.eq.${uid})&limit=1`))[0]||null;}
+function friendPair(a,b){return String(a)<String(b)?[String(a),String(b)]:[String(b),String(a)];}
+async function friendship(a,b){const [one,two]=friendPair(a,b);return (await rows(`/user_friendships?select=*&user_one=eq.${one}&user_two=eq.${two}&limit=1`))[0]||null;}
+async function signedPhoto(photo){const path=String(photo.storage_path||'').split('/').map(encodeURIComponent).join('/');const r=await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/sign/profile-gallery/${path}`,{method:'POST',headers:H({'Content-Type':'application/json'}),body:JSON.stringify({expiresIn:300})});if(!r.ok)throw new Error('photo sign');const data=await r.json();return {id:photo.id,caption:photo.caption||'',url:data.signedURL,created_at:photo.created_at};}
+async function gallery(ownerId){const photos=await rows(`/profile_photos?select=id,storage_path,caption,created_at,position&owner_id=eq.${ownerId}&order=position.asc,created_at.desc&limit=12`);return Promise.all(photos.map(signedPhoto));}
+async function friendRecord(id,uid){return (await rows(`/user_friendships?select=*&id=eq.${id}&or=(user_one.eq.${uid},user_two.eq.${uid})&limit=1`))[0]||null;}
 module.exports=async(req,res)=>{
  noStore(res);if(!protect(req,res,{write:req.method!=='GET',limit:120,windowMs:60000,maxBytes:120000}))return; const auth=await requireAuth(req,res); if(!auth)return;
  try{
-  const me=await profile(auth.id); if(!me)return res.status(403).json({ok:false,message:'Алдымен профильді толтырыңыз'});
+  const me=await profile(auth.id); if(!me)return res.status(403).json({ok:false,message:'Алдымен профильді толтырыңыз'});if(me.blocked)return res.status(403).json({ok:false,message:'Аккаунт бұғатталған'});
   const mode=String(req.query?.mode||req.body?.action||'inbox');
+  // Private friendship/gallery tables are not part of the deployed database schema.
+  if(['friends','gallery','friend_request','start_friend_chat','friend_status','friend'].includes(mode))return res.status(404).json({ok:false,message:'Бұл мүмкіндік қолжетімсіз'});
   if(req.method==='GET'&&mode==='inbox'){
    const conv=await rows(`/conversations?select=*&or=(buyer_id.eq.${auth.id},seller_id.eq.${auth.id})&order=updated_at.desc&limit=100`);
    const msgs=conv.length?await rows(`/messages?select=*&conversation_id=in.(${conv.map(x=>x.id).join(',')})&order=created_at.desc&limit=300`):[];
@@ -20,6 +27,15 @@ module.exports=async(req,res)=>{
    const reservations=await rows(`/reservations?select=*&or=(buyer_id.eq.${auth.id},seller_id.eq.${auth.id})&order=created_at.desc&limit=100`);
    return res.json({ok:true,me_id:auth.id,conversations:conv,messages:msgs,offers,reservations});
   }
+  if(req.method==='GET'&&mode==='friends'){
+   const links=await rows(`/user_friendships?select=*&or=(user_one.eq.${auth.id},user_two.eq.${auth.id})&order=updated_at.desc&limit=200`);
+   const ids=[...new Set(links.map(x=>x.user_one===auth.id?x.user_two:x.user_one))];
+   const people=ids.length?await rows(`/users?select=auth_user_id,name,avatar_url,shop_name,bio,verified,blocked&auth_user_id=in.(${ids.join(',')})`):[];
+   const person=id=>people.find(x=>x.auth_user_id===id)||{auth_user_id:id,name:'Қолданушы'};
+   const mapLink=x=>{const other=x.user_one===auth.id?x.user_two:x.user_one;return {...x,person:person(other),incoming:x.requested_by!==auth.id};};
+   return res.json({ok:true,friends:links.filter(x=>x.status==='accepted').map(mapLink),incoming:links.filter(x=>x.status==='pending'&&x.requested_by!==auth.id).map(mapLink),outgoing:links.filter(x=>x.status==='pending'&&x.requested_by===auth.id).map(mapLink)});
+  }
+  if(req.method==='GET'&&mode==='gallery')return res.json({ok:true,photos:await gallery(auth.id)});
   if(req.method==='GET'&&mode==='messages'){
    const cid=String(req.query?.conversation_id||''); if(!idOk(cid))return res.status(400).json({ok:false,message:'Чат ID қате'});
    const c=await conversation(cid,auth.id);if(!c)return res.status(403).json({ok:false,message:'Бұл чатқа рұқсат жоқ'});
@@ -34,6 +50,20 @@ module.exports=async(req,res)=>{
    const active=await rows(`/listings?select=id,title,price,status,images&seller_auth_id=eq.${sid}&order=created_at.desc&limit=50`);
    const avg=reviews.length?reviews.reduce((s,x)=>s+Number(x.rating),0)/reviews.length:0;
    return res.json({ok:true,seller:{auth_user_id:seller.auth_user_id,name:seller.name,avatar_url:seller.avatar_url,shop_name:seller.shop_name||'',bio:seller.bio||'',verified:Boolean(seller.verified),rating:Number(avg.toFixed(1)),review_count:reviews.length},reviews,listings:active});
+  }
+  if(req.method==='POST'&&mode==='friend_request'){
+   const target=String(req.body?.user_id||'');if(!idOk(target)||target===auth.id)return res.status(400).json({ok:false,message:'Досқа шақыру деректері қате'});
+   const other=await profile(target);if(!other||other.blocked)return res.status(404).json({ok:false,message:'Қолданушы қолжетімсіз'});
+   const existing=await friendship(auth.id,target);if(existing)return res.status(409).json({ok:false,message:existing.status==='accepted'?'Бұл адам қазір досыңыз':'Сұраныс бұрын жіберілген'});
+   const [user_one,user_two]=friendPair(auth.id,target);
+   const link=(await rows('/user_friendships',{method:'POST',headers:jsonHeaders,body:JSON.stringify([{user_one,user_two,requested_by:auth.id,status:'pending'}])}))[0];
+   return res.status(201).json({ok:true,friendship:link});
+  }
+  if(req.method==='POST'&&mode==='start_friend_chat'){
+   const target=String(req.body?.user_id||''),link=await friendship(auth.id,target);if(!idOk(target)||link?.status!=='accepted')return res.status(403).json({ok:false,message:'Чат тек расталған достарға ашық'});
+   const [low,high]=friendPair(auth.id,target);let found=await rows(`/conversations?select=*&conversation_type=eq.friend&participant_low=eq.${low}&participant_high=eq.${high}&limit=1`);
+   if(!found.length){const other=await profile(target);if(!other)return res.status(404).json({ok:false,message:'Қолданушы табылмады'});found=await rows('/conversations',{method:'POST',headers:jsonHeaders,body:JSON.stringify([{listing_id:null,listing_title:'Достар чаты',conversation_type:'friend',participant_low:low,participant_high:high,buyer_id:auth.id,buyer_name:me.name,seller_id:target,seller_name:other.name}])});}
+   return res.status(201).json({ok:true,me_id:auth.id,conversation:found[0]});
   }
   if(req.method==='POST'&&mode==='start_chat'){
    const lid=String(req.body?.listing_id||'');if(!idOk(lid))return res.status(400).json({ok:false,message:'Хабарландыру ID қате'});
@@ -77,6 +107,17 @@ module.exports=async(req,res)=>{
    const id=String(req.body?.id||''),status=String(req.body?.status||'');if(!idOk(id)||!['accepted','rejected','cancelled','completed'].includes(status))return res.status(400).json({ok:false,message:'Статус қате'});
    const filter=status==='cancelled'?`id=eq.${id}&buyer_id=eq.${auth.id}`:`id=eq.${id}&seller_id=eq.${auth.id}`;
    const out=await rows(`/reservations?${filter}`,{method:'PATCH',headers:jsonHeaders,body:JSON.stringify({status,updated_at:new Date().toISOString()})});if(!out.length)return res.status(403).json({ok:false,message:'Рұқсат жоқ'});return res.json({ok:true,reservation:out[0]});
+  }
+  if(req.method==='PATCH'&&mode==='friend_status'){
+   const id=String(req.body?.id||''),status=String(req.body?.status||'');if(!idOk(id))return res.status(400).json({ok:false,message:'Достық сұранысы қате'});const link=await friendRecord(id,auth.id);if(!link||!['accepted','declined','cancelled'].includes(status))return res.status(400).json({ok:false,message:'Достық сұранысы қате'});
+   if(status==='accepted'||status==='declined'){if(link.requested_by===auth.id||link.status!=='pending')return res.status(403).json({ok:false,message:'Бұл сұранысты өзгертуге рұқсат жоқ'});const out=await rows(`/user_friendships?id=eq.${id}`,{method:'PATCH',headers:jsonHeaders,body:JSON.stringify({status,updated_at:new Date().toISOString()})});return res.json({ok:true,friendship:out[0]});}
+   if(link.requested_by!==auth.id||link.status!=='pending')return res.status(403).json({ok:false,message:'Сұранысты жоюға рұқсат жоқ'});await rows(`/user_friendships?id=eq.${id}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});return res.json({ok:true});
+  }
+  if(req.method==='DELETE'&&mode==='friend'){
+   const id=String(req.query?.id||req.body?.id||'');if(!idOk(id))return res.status(400).json({ok:false,message:'Достық сұранысы қате'});const link=await friendRecord(id,auth.id);if(!link||link.status!=='accepted')return res.status(404).json({ok:false,message:'Достық табылмады'});await rows(`/user_friendships?id=eq.${id}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});return res.json({ok:true});
+  }
+  if(req.method==='DELETE'&&mode==='gallery'){
+   const id=String(req.query?.id||req.body?.id||'');if(!idOk(id))return res.status(400).json({ok:false,message:'Фото ID қате'});const photo=(await rows(`/profile_photos?select=*&id=eq.${id}&owner_id=eq.${auth.id}&limit=1`))[0];if(!photo)return res.status(404).json({ok:false,message:'Фото табылмады'});await rows(`/profile_photos?id=eq.${id}&owner_id=eq.${auth.id}`,{method:'DELETE',headers:{Prefer:'return=minimal'}});await fetch(`${process.env.SUPABASE_URL}/storage/v1/object/profile-gallery/${photo.storage_path.split('/').map(encodeURIComponent).join('/')}`,{method:'DELETE',headers:H()});return res.json({ok:true});
   }
   if(req.method==='PATCH'&&mode==='profile'){
    const shop_name=String(req.body?.shop_name||'').trim(),bio=String(req.body?.bio||'').trim();if(shop_name.length>80||bio.length>500)return res.status(400).json({ok:false,message:'Дүкен ақпараты тым ұзын'});

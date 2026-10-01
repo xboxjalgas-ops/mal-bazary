@@ -18,3 +18,6 @@ module.exports = async (req,res)=>{
     return res.status(200).json({ok:true});
   }catch{return res.status(500).json({ok:false,message:'Серверде қате'});}
 };
+
+// Additional protection; original handler retained above.
+module.exports = require('../lib/ownership-guard').withOwnership(module.exports, 'delete');

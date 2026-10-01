@@ -1,5 +1,5 @@
 let adminData=null,adminTab='listings';
-const esc=x=>{const d=document.createElement('div');d.textContent=String(x??'');return d.innerHTML};
+const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 async function af(url,options={}){const token=await authAccessToken();return fetch(url,{...options,headers:{...(options.headers||{}),Authorization:`Bearer ${token}`}})}
 function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2400)}
 async function loadAdmin(){consumeOAuthHash();const token=await authAccessToken();if(!token){location.href='market.html';return}try{const r=await af('/api/admin'),d=await r.json();if(!r.ok||!d.ok)throw new Error(d.message);adminData=d;document.getElementById('adminStats').innerHTML=`<article><b>${d.stats.listings}</b><span>Хабарландыру</span></article><article><b>${d.stats.pending}</b><span>Модерацияда</span></article><article><b>${d.stats.users}</b><span>Қолданушы</span></article><article><b>${d.stats.tickets}</b><span>Ашық шағым</span></article>`;renderAdmin();}catch(e){document.getElementById('adminContent').innerHTML=`<div class="empty-note">${esc(e.message||'Рұқсат жоқ')}</div>`}}

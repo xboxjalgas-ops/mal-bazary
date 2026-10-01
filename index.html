@@ -28,7 +28,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css?v=20260913-5">
-<link rel="stylesheet" href="css/landing.css?v=20260911-12">
+<link rel="stylesheet" href="css/landing.css?v=20261001-1">
 <link rel="stylesheet" href="css/cta-contrast.css?v=20260912-2">
 <script type="application/ld+json">
 {
@@ -60,6 +60,7 @@
 }
 </script>
 <script>try{document.documentElement.dataset.theme=localStorage.getItem("mb_theme")||"light"}catch(e){}</script>
+<link rel="stylesheet" href="css/comfort-catalog.css?v=20260922-3">
 </head>
 <body class="landing-page">
 
@@ -107,7 +108,28 @@
       <div class="trust-stat"><b>100%</b><span>тікелей байланыс</span></div>
     </div>
   </div>
-  <div class="hero-photo-note"><span>Қазақстанның кең даласы</span><b>Фермерлерге жақын, шынайы нарық</b></div>
+  <div class="hero-story" data-hero-story role="region" aria-label="Нарықтың қысқа көрінісі">
+    <div class="hero-story-frames" aria-live="off">
+      <figure class="hero-story-frame is-current" aria-hidden="false">
+        <img src="assets/home/cow.svg" alt="" width="640" height="640" fetchpriority="high">
+        <figcaption><span>01 / Мал</span><strong>Өз малыңды көрсет</strong></figcaption>
+      </figure>
+      <figure class="hero-story-frame" aria-hidden="true">
+        <img src="assets/home/horse.svg" alt="" width="640" height="640" loading="lazy">
+        <figcaption><span>02 / Таңдау</span><strong>Керегіңді оңай тап</strong></figcaption>
+      </figure>
+      <figure class="hero-story-frame" aria-hidden="true">
+        <img src="assets/home/equipment.svg" alt="" width="640" height="640" loading="lazy">
+        <figcaption><span>03 / Өнімдер</span><strong>Құрал-жабдықты да ізде</strong></figcaption>
+      </figure>
+    </div>
+    <div class="hero-story-header"><span>Қысқа көрініс</span><span class="hero-story-count" aria-hidden="true"><b data-story-index>01</b> / 03</span></div>
+    <div class="hero-story-controls">
+      <div class="hero-story-steps" aria-hidden="true"><i class="is-current"></i><i></i><i></i></div>
+      <button class="hero-story-next" type="button" aria-label="Келесі кадр">›</button>
+      <button class="hero-story-toggle" type="button" aria-pressed="false"><span class="story-when-playing">Ⅱ&nbsp; Тоқтату</span><span class="story-when-paused">▶&nbsp; Ойнату</span></button>
+    </div>
+  </div>
 </section>
 
 <section id="maldar" class="market-gate" data-market-gate>
@@ -189,9 +211,11 @@
   </div>
 </footer>
 
-<script src="js/i18n.js?v=20260913-2"></script>
+<script src="js/i18n.js?v=20260922-3"></script>
 <script src="js/experience.js?v=20260913-1"></script>
 <script src="js/effects.js?v=20260911-11"></script>
+<script src="js/hero-story.js?v=20261001-1"></script>
 <script src="js/pwa.js?v=20260912-2"></script>
+<script src="js/comfort-catalog.js?v=20260923-1"></script>
 </body>
 </html>

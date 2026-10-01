@@ -8,9 +8,7 @@
    хабарландыру өрісіне <script> немесе басқа HTML кодын салып,
    басқа қолданушыларға зиян тигізуіне жол бермейді. */
 function escapeHTML(str){
-  const div = document.createElement('div');
-  div.textContent = String(str ?? '');
-  return div.innerHTML;
+  return String(str ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 }
 
 /* ---------- PHONE MASK (+7 префиксі әрдайым тұрақты) ---------- */
@@ -71,6 +69,17 @@ function iconChip(type){ return `<div style="width:28px;height:28px;color:${catC
 let listings = [];
 let dataLoaded = false;
 
+function catalogLoadMessage(target, retry, failed){
+  const grid=document.getElementById(target);if(!grid)return;
+  let message=document.getElementById(target+'LoadError');
+  if(!message){message=document.createElement('p');message.id=target+'LoadError';message.className='mb-field-error';message.setAttribute('role','alert');grid.before(message);}
+  message.replaceChildren();message.hidden=!failed;
+  if(!failed)return;
+  const russian=document.documentElement.lang==='ru';
+  message.append(document.createTextNode(russian?'Не удалось загрузить объявления. Проверьте интернет. ':'Хабарландырулар жүктелмеді. Интернетті тексеріңіз. '));
+  const button=document.createElement('button');button.type='button';button.className='btn btn-ghost btn-small';button.textContent=russian?'Повторить':'Қайталау';button.addEventListener('click',retry);message.append(button);
+}
+
 const feed = [
   {tag:"tag-good",tagText:"САПАЛЫ",name:"Жоғары сортты пішен-жем қоспасы",desc:"Витаминдер қосылған, ірі қараға арналған, 1 қап 50кг.",price:"18 000 ₸ / қап"},
   {tag:"tag-budget",tagText:"ҚОЛЖЕТІМДІ",name:"Қарапайым сұлы-арпа қоспасы",desc:"Күнделікті азықтандыруға, экономды баға.",price:"7 500 ₸ / қап"},
@@ -106,23 +115,27 @@ function normalizeProduct(row){
 }
 
 async function loadListings(){
+  catalogLoadMessage('listingsList',loadListings,false);
   window.mbSkeleton?.('listingsList', 4);
   try{
     const res = await fetch('/api/get-data?type=listings');
     const data = await res.json();
-    if(data.ok){ listings = data.listings.map(normalizeListing); }
-  }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
+    if(!res.ok||!data.ok||!Array.isArray(data.listings))throw new Error('catalog');
+    listings = data.listings.map(normalizeListing);
+  }catch(err){ catalogLoadMessage('listingsList',loadListings,true); }
   renderListings();
   window.mbLoaded?.('listingsList');
 }
 
 async function loadUserProducts(){
+  catalogLoadMessage('feedGrid',loadUserProducts,false);
   ['feedGrid','medGrid','coopGrid'].forEach(id=>window.mbSkeleton?.(id, 2));
   try{
     const res = await fetch('/api/get-data?type=products');
     const data = await res.json();
-    if(data.ok){ userProducts = data.products.map(normalizeProduct); }
-  }catch(err){ /* желі болмаса — бос тізіммен қалады */ }
+    if(!res.ok||!data.ok||!Array.isArray(data.products))throw new Error('catalog');
+    userProducts = data.products.map(normalizeProduct);
+  }catch(err){ catalogLoadMessage('feedGrid',loadUserProducts,true); }
   renderProducts();
   ['feedGrid','medGrid','coopGrid'].forEach(id=>window.mbLoaded?.(id));
 }
@@ -139,13 +152,30 @@ let searchQuery = "";
 let sortMode = "newest";
 let favoritesOnly = false;
 const FAVORITES_KEY = "mb_favorites";
+let temporaryFavorites = null;
+
+function normalizeFavorites(value){
+  if(!Array.isArray(value))return [];
+  return [...new Set(value
+    .filter(id=>typeof id==='string'&&id.trim()!==''||typeof id==='number'&&Number.isSafeInteger(id)&&id>=0)
+    .map(id=>String(id).trim()))];
+}
 
 function getFavorites(){
-  try{ return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]"); }catch(e){ return []; }
+  if(temporaryFavorites!==null)return [...temporaryFavorites];
+  try{ return normalizeFavorites(JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]")); }catch(e){ return []; }
 }
 function isFavorite(id){ return getFavorites().includes(String(id)); }
 function saveFavorites(favorites){
-  localStorage.setItem(FAVORITES_KEY, JSON.stringify([...new Set(favorites.map(String))]));
+  const normalized=normalizeFavorites(favorites);
+  try{
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(normalized));
+    temporaryFavorites=null;
+    return true;
+  }catch{
+    temporaryFavorites=normalized;
+    return false;
+  }
 }
 async function syncFavorites(){
   if(!user)return;
@@ -168,14 +198,15 @@ async function toggleFavorite(id){
   let favs = getFavorites();
   const favorite=!favs.includes(id);
   favs = favorite ? [...favs, id] : favs.filter(x=>x!==id);
-  saveFavorites(favs);
+  const persisted=saveFavorites(favs);
   renderListings();
+  if(!persisted)showToast('Таңдаулылар тек осы бет ашық тұрғанда сақталады: браузер жадын тексеріңіз');
   if(user){
     try{
       const response=await apiFetch('/api/preferences',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({listing_id:id,favorite})});
       if(!response.ok)throw new Error('sync');
     }catch{
-      showToast('Таңдаулы құрылғыда сақталды, синхрондау кейін жалғасады');
+      showToast(persisted?'Таңдаулы құрылғыда сақталды, синхрондау кейін жалғасады':'Таңдаулылар уақытша сақталды, сервермен синхрондау орындалмады');
     }
   }
 }
@@ -303,7 +334,7 @@ function openGallery(id){
   const l=listings.find(x=>String(x.id)===String(id));if(!l?.images?.length)return;
   document.getElementById('galleryTitle').textContent=l.title;
   document.getElementById('galleryMain').src=l.images[0];document.getElementById('galleryMain').alt=l.title;
-  document.getElementById('galleryThumbs').innerHTML=l.images.map((url,i)=>`<button class="gallery-thumb ${i===0?'active':''}" onclick="setGalleryImage('${escapeHTML(url)}',this)"><img src="${escapeHTML(url)}" alt="${i+1}-сурет"></button>`).join('');
+  document.getElementById('galleryThumbs').innerHTML=l.images.map((url,i)=>`<button class="gallery-thumb ${i===0?'active':''}" data-image-url="${escapeHTML(url)}" onclick="setGalleryImage(this.dataset.imageUrl,this)"><img src="${escapeHTML(url)}" alt="${i+1}-сурет"></button>`).join('');
   openModal('galleryModal');
 }
 function setGalleryImage(url,button){document.getElementById('galleryMain').src=url;document.querySelectorAll('.gallery-thumb').forEach(x=>x.classList.remove('active'));button.classList.add('active');}
@@ -385,7 +416,7 @@ function renderProducts(){
     document.getElementById(id).innerHTML = items.length ? items.map(productCard).join('') : '<div class="empty-note">Бұл санатта әзірше хабарландыру жоқ.</div>';
   });
 }
-function openProductGallery(id){const p=userProducts.find(x=>String(x.id)===String(id));if(!p?.images?.length)return;document.getElementById('galleryTitle').textContent=p.name;document.getElementById('galleryMain').src=p.images[0];document.getElementById('galleryMain').alt=p.name;document.getElementById('galleryThumbs').innerHTML=p.images.map((url,i)=>`<button class="gallery-thumb ${i===0?'active':''}" onclick="setGalleryImage('${escapeHTML(url)}',this)"><img src="${escapeHTML(url)}" alt="${i+1}-сурет"></button>`).join('');openModal('galleryModal');}
+function openProductGallery(id){const p=userProducts.find(x=>String(x.id)===String(id));if(!p?.images?.length)return;document.getElementById('galleryTitle').textContent=p.name;document.getElementById('galleryMain').src=p.images[0];document.getElementById('galleryMain').alt=p.name;document.getElementById('galleryThumbs').innerHTML=p.images.map((url,i)=>`<button class="gallery-thumb ${i===0?'active':''}" data-image-url="${escapeHTML(url)}" onclick="setGalleryImage(this.dataset.imageUrl,this)"><img src="${escapeHTML(url)}" alt="${i+1}-сурет"></button>`).join('');openModal('galleryModal');}
 function openProductCall(id){
   const p = userProducts.find(item=>String(item.id)===String(id));
   if(!p) return;
@@ -495,10 +526,11 @@ function updateHeader(){
 
 /* ---------- ТЕМА ---------- */
 const THEME_KEY = "mb_theme";
+function readTheme(){try{return localStorage.getItem(THEME_KEY)||'light';}catch{return document.documentElement.dataset.theme||'light';}}
 function setTheme(theme){
   const t = theme === 'dark' ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', t);
-  localStorage.setItem(THEME_KEY, t);
+  try{localStorage.setItem(THEME_KEY, t);}catch{/* The selected theme still applies to this page. */}
   const lightSw = document.getElementById('themeSwatchLight');
   const darkSw = document.getElementById('themeSwatchDark');
   if(lightSw && darkSw){
@@ -513,11 +545,11 @@ function setTheme(theme){
   }
 }
 function toggleTheme(){
-  const cur = localStorage.getItem(THEME_KEY) || 'light';
+  const cur = readTheme();
   setTheme(cur === 'dark' ? 'light' : 'dark');
 }
 function initTheme(){
-  setTheme(localStorage.getItem(THEME_KEY) || 'light');
+  setTheme(readTheme());
 }
 
 /* ---------- ПРОФИЛЬ МОДАЛЫ ---------- */
@@ -528,7 +560,7 @@ function openProfileModal(){
   document.getElementById('profileName').textContent = user.name;
   document.getElementById('profilePhone').textContent = `${user.phone}${user.email ? ' · '+user.email : ''}`;
   document.getElementById('adminPanel').style.display=user.role==='admin'?'block':'none';
-  const saved = localStorage.getItem(THEME_KEY) || 'light';
+  const saved = readTheme();
   document.getElementById('themeSwatchLight').classList.toggle('active', saved !== 'dark');
   document.getElementById('themeSwatchDark').classList.toggle('active', saved === 'dark');
   openModal('profileModal');
@@ -590,7 +622,7 @@ async function submitPost(){
       const type = document.getElementById('postType').value;
       const title = document.getElementById('postTitle').value.trim();
       const desc = document.getElementById('postDesc').value.trim();
-      const price = parseInt(document.getElementById('postPrice').value);
+      const price = Number(document.getElementById('postPrice').value);
       const loc = document.getElementById('postLoc').value.trim();
       if(!title || !price || !loc){ showToast('Барлық өрісті толтырыңыз'); return; }
 
