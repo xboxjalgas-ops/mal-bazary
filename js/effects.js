@@ -9,16 +9,12 @@
   progress.className='fx-progress';progress.setAttribute('aria-hidden','true');document.body.prepend(progress);
 
   const hero=document.querySelector('[data-scroll-hero]');
-  const gate=document.querySelector('[data-market-gate]');
-  const steps=[...document.querySelectorAll('[data-scroll-step]')];
   let ticking=false;
   const paintScroll=()=>{
     ticking=false;
     const max=document.documentElement.scrollHeight-innerHeight;
     progress.style.transform=`scaleX(${max>0?scrollY/max:0})`;
     if(hero){const r=hero.getBoundingClientRect(),p=clamp(-r.top/Math.max(r.height,1));hero.style.setProperty('--hero-p',p.toFixed(3));hero.style.setProperty('--hero-x',`${(p*18).toFixed(1)}px`);}
-    if(gate){const r=gate.getBoundingClientRect(),travel=Math.max(r.height-innerHeight,1),raw=clamp(-r.top/travel),p=raw<.16?0:clamp((raw-.16)/.64);gate.style.setProperty('--gate',p.toFixed(3));gate.querySelector('.gate-stage')?.setAttribute('data-sc-verify-state',`gate-${Math.round(p*20)}`);}
-    if(steps.length){const focus=innerHeight*.62;let nearest=null,dist=Infinity;steps.forEach(step=>{const d=Math.abs(step.getBoundingClientRect().top-focus);if(d<dist){dist=d;nearest=step;}});steps.forEach(step=>step.classList.toggle('scroll-step-active',step===nearest));}
   };
   const requestPaint=()=>{if(!ticking){ticking=true;requestAnimationFrame(paintScroll);}};
   addEventListener('scroll',requestPaint,{passive:true});addEventListener('resize',requestPaint,{passive:true});paintScroll();
