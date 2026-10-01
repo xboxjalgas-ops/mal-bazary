@@ -1,4 +1,4 @@
-const CACHE='mal-bazary-v19';
+const CACHE='mal-bazary-v20';
 // Additional assets for the comfort and catalog layer; existing cache behavior is retained.
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(['/css/comfort-catalog.css','/js/catalog-options.js','/js/comfort-catalog.js','/js/form-rules.js','/js/form-experience.js']))));
 const SHELL=['/','/index.html','/market.html','/listing.html','/admin.html','/js/i18n.js','/js/locations.js','/css/style.css','/css/landing.css','/css/cta-contrast.css','/js/effects.js','/js/hero-story.js','/js/experience.js','/js/notifications.js','/js/pwa.js','/manifest.webmanifest','/favicon.svg','/assets/brand/mal-bazary-mark.svg','/assets/home/cow.svg','/assets/home/horse.svg','/assets/home/equipment.svg'];

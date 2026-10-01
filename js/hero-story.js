@@ -8,9 +8,10 @@
   const count = story.querySelector('[data-story-index]');
   const next = story.querySelector('.hero-story-next');
   const toggle = story.querySelector('.hero-story-toggle');
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const status = story.querySelector('[data-story-status]');
+  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
   let index = 0;
-  let playing = !reduced;
+  let playing = !motionPreference.matches;
   let visible = true;
   let timer;
   const calm = () => document.documentElement.dataset.mbCalm === 'on';
@@ -30,19 +31,24 @@
     });
     count.textContent = String(index + 1).padStart(2, '0');
     story.classList.toggle('is-paused', !playing || calm());
-    toggle.setAttribute('aria-pressed', String(!playing));
   }
 
   function schedule() {
     clearTimeout(timer);
-    if (playing && !calm() && visible && !document.hidden) {
+    if (playing && !motionPreference.matches && !calm() && visible && !document.hidden) {
       timer = setTimeout(() => { index = (index + 1) % frames.length; show(); schedule(); }, 5500);
     }
   }
 
-  next.addEventListener('click', () => { index = (index + 1) % frames.length; show(); schedule(); });
+  next.addEventListener('click', () => {
+    index = (index + 1) % frames.length;
+    show();
+    status.textContent = `${index + 1} / ${frames.length}: ${frames[index].querySelector('figcaption strong').textContent}`;
+    schedule();
+  });
   toggle.addEventListener('click', () => { playing = !playing; show(); schedule(); });
   document.addEventListener('visibilitychange', schedule);
+  motionPreference.addEventListener('change', () => { if (motionPreference.matches) playing = false; show(); schedule(); });
   new MutationObserver(() => { labels(); show(); schedule(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang', 'data-mb-calm'] });
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; schedule(); }, { threshold: .1 }).observe(story);

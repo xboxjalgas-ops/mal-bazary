@@ -40,7 +40,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://wqjkvkmowxswhdmgjsfd.supabase.co; object-src 'none'; frame-src https://www.openstreetmap.org; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://wqjkvkmowxswhdmgjsfd.supabase.co; object-src 'none'; frame-src https://www.openstreetmap.org https://maps.google.com https://www.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
         },
         {
           "key": "Cross-Origin-Opener-Policy",
