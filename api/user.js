@@ -29,11 +29,13 @@ module.exports = async (req, res) => {
       if (matches.length && matches[0].auth_user_id && matches[0].auth_user_id !== authUser.id) {
         return res.status(409).json({ ok: false, message: 'Бұл телефон басқа аккаунтқа тіркелген' });
       }
+      if (matches.length && !matches[0].auth_user_id) {
+        return res.status(409).json({ ok: false, message: 'Бұл нөмір бұрынғы профильге тиесілі. Иелікті растау үшін қолдауға жазыңыз' });
+      }
 
       const payload = { auth_user_id: authUser.id, email: authUser.email || null, name, phone, role: isAdminEmail(authUser.email) ? 'admin' : 'user' };
       let url = `${base()}?auth_user_id=eq.${authUser.id}`;
       let method = 'PATCH';
-      if (matches.length && !matches[0].auth_user_id) url = `${base()}?id=eq.${matches[0].id}`;
       const existing = await fetch(`${base()}?select=id&auth_user_id=eq.${authUser.id}&limit=1`, { headers: h() });
       const existingRows = existing.ok ? await existing.json() : [];
       if (!existingRows.length && !matches.length) { url = base(); method = 'POST'; }
