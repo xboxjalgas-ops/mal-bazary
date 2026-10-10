@@ -2,9 +2,9 @@ const { requireAuth, isAdminEmail, noStore } = require('../lib/auth');
 const {protect}=require('../lib/security');
 const H = extra => ({apikey:process.env.SUPABASE_SERVICE_ROLE_KEY,Authorization:`Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,...extra});
 const root = () => `${process.env.SUPABASE_URL}/rest/v1`;
-const idOk = x => /^[0-9a-f-]{36}$/i.test(String(x||''));
+const idOk = x => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(x||''));
 const jsonHeaders = {'Content-Type':'application/json',Prefer:'return=representation'};
-async function rows(path, options={}){const r=await fetch(`${root()}${path}`,{...options,headers:H(options.headers||{})});if(!r.ok)throw new Error(await r.text());return r.status===204?[]:r.json();}
+async function rows(path, options={}){const r=await fetch(`${root()}${path}`,{...options,headers:H(options.headers||{})});if(!r.ok){const error=new Error('database');error.status=r.status;throw error;}return r.status===204?[]:r.json();}
 async function profile(uid){return (await rows(`/users?select=*&auth_user_id=eq.${uid}&limit=1`))[0]||null;}
 async function listing(id){return (await rows(`/listings?select=*&id=eq.${id}&limit=1`))[0]||null;}
 async function conversation(id,uid){return (await rows(`/conversations?select=*&id=eq.${id}&or=(buyer_id.eq.${uid},seller_id.eq.${uid})&limit=1`))[0]||null;}
@@ -81,31 +81,33 @@ module.exports=async(req,res)=>{
    return res.status(201).json({ok:true,message:m});
   }
   if(req.method==='POST'&&mode==='make_offer'){
-   const lid=String(req.body?.listing_id||''),amount=Number(req.body?.amount);const l=await listing(lid);
-   if(!l||!l.seller_auth_id||l.seller_auth_id===auth.id||!Number.isFinite(amount)||amount<=0||amount>1e9)return res.status(400).json({ok:false,message:'Баға ұсынысы қате'});
-   const o=await rows('/offers?on_conflict=listing_id,buyer_id',{method:'POST',headers:H({...jsonHeaders,Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify([{listing_id:lid,listing_title:l.title,buyer_id:auth.id,buyer_name:me.name,seller_id:l.seller_auth_id,amount,status:'pending',updated_at:new Date().toISOString()}])});
+   const lid=String(req.body?.listing_id||''),amount=Number(req.body?.amount);if(!idOk(lid))return res.status(400).json({ok:false,message:'Баға ұсынысы қате'});const l=await listing(lid);
+   if(!l||!l.seller_auth_id||l.seller_auth_id===auth.id||l.status!=='active'||l.moderation_status!=='approved'||!Number.isSafeInteger(amount)||amount<=0||amount>1e9)return res.status(400).json({ok:false,message:'Баға ұсынысы қате'});
+   const existing=await rows(`/offers?select=id&listing_id=eq.${lid}&buyer_id=eq.${auth.id}&limit=1`);if(existing.length)return res.status(409).json({ok:false,message:'Бұл хабарландыруға ұсыныс бұрын жіберілген'});
+   const o=await rows('/offers',{method:'POST',headers:jsonHeaders,body:JSON.stringify([{listing_id:lid,listing_title:l.title,buyer_id:auth.id,buyer_name:me.name,seller_id:l.seller_auth_id,amount,status:'pending'}])});
    return res.status(201).json({ok:true,offer:o[0]});
   }
   if(req.method==='POST'&&mode==='reserve'){
-   const lid=String(req.body?.listing_id||'');const l=await listing(lid);if(!l||!l.seller_auth_id||l.seller_auth_id===auth.id||l.status!=='active')return res.status(400).json({ok:false,message:'Бронь жасау мүмкін емес'});
-   const r=await rows('/reservations?on_conflict=listing_id,buyer_id',{method:'POST',headers:H({...jsonHeaders,Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify([{listing_id:lid,listing_title:l.title,buyer_id:auth.id,buyer_name:me.name,seller_id:l.seller_auth_id,status:'pending',updated_at:new Date().toISOString()}])});
+   const lid=String(req.body?.listing_id||'');if(!idOk(lid))return res.status(400).json({ok:false,message:'Бронь жасау мүмкін емес'});const l=await listing(lid);if(!l||!l.seller_auth_id||l.seller_auth_id===auth.id||l.status!=='active'||l.moderation_status!=='approved')return res.status(400).json({ok:false,message:'Бронь жасау мүмкін емес'});
+   const existing=await rows(`/reservations?select=id&listing_id=eq.${lid}&buyer_id=eq.${auth.id}&limit=1`);if(existing.length)return res.status(409).json({ok:false,message:'Бұл хабарландыруға бронь бұрын жасалған'});
+   const r=await rows('/reservations',{method:'POST',headers:jsonHeaders,body:JSON.stringify([{listing_id:lid,listing_title:l.title,buyer_id:auth.id,buyer_name:me.name,seller_id:l.seller_auth_id,status:'pending'}])});
    return res.status(201).json({ok:true,reservation:r[0]});
   }
   if(req.method==='POST'&&mode==='review'){
-   const lid=String(req.body?.listing_id||''),rating=Number(req.body?.rating),comment=String(req.body?.comment||'').trim();const l=await listing(lid);
+   const lid=String(req.body?.listing_id||''),rating=Number(req.body?.rating),comment=String(req.body?.comment||'').trim();if(!idOk(lid))return res.status(400).json({ok:false,message:'Пікір деректері қате'});const l=await listing(lid);
    if(!l||!l.seller_auth_id||l.seller_auth_id===auth.id||l.status!=='sold'||!Number.isInteger(rating)||rating<1||rating>5||comment.length>600)return res.status(400).json({ok:false,message:'Пікір деректері қате немесе сауда аяқталмаған'});
-   const done=await rows(`/reservations?select=id&listing_id=eq.${lid}&buyer_id=eq.${auth.id}&status=in.(accepted,completed)&limit=1`);if(!done.length)return res.status(403).json({ok:false,message:'Пікірді тек расталған сатып алушы жаза алады'});
+   const done=await rows(`/reservations?select=id&listing_id=eq.${lid}&buyer_id=eq.${auth.id}&status=eq.completed&limit=1`);if(!done.length)return res.status(403).json({ok:false,message:'Пікірді тек сауданы аяқтаған сатып алушы жаза алады'});
    const rv=await rows('/reviews?on_conflict=listing_id,reviewer_id',{method:'POST',headers:H({...jsonHeaders,Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify([{listing_id:lid,listing_title:l.title,reviewer_id:auth.id,reviewer_name:me.name,seller_id:l.seller_auth_id,rating,comment}])});
    return res.status(201).json({ok:true,review:rv[0]});
   }
   if(req.method==='PATCH'&&mode==='offer_status'){
    const id=String(req.body?.id||''),status=String(req.body?.status||'');if(!idOk(id)||!['accepted','rejected','cancelled'].includes(status))return res.status(400).json({ok:false,message:'Статус қате'});
-   const filter=status==='cancelled'?`id=eq.${id}&buyer_id=eq.${auth.id}`:`id=eq.${id}&seller_id=eq.${auth.id}`;
+   const filter=status==='cancelled'?`id=eq.${id}&buyer_id=eq.${auth.id}&status=eq.pending`:`id=eq.${id}&seller_id=eq.${auth.id}&status=eq.pending`;
    const out=await rows(`/offers?${filter}`,{method:'PATCH',headers:jsonHeaders,body:JSON.stringify({status,updated_at:new Date().toISOString()})});if(!out.length)return res.status(403).json({ok:false,message:'Рұқсат жоқ'});return res.json({ok:true,offer:out[0]});
   }
   if(req.method==='PATCH'&&mode==='reservation_status'){
    const id=String(req.body?.id||''),status=String(req.body?.status||'');if(!idOk(id)||!['accepted','rejected','cancelled','completed'].includes(status))return res.status(400).json({ok:false,message:'Статус қате'});
-   const filter=status==='cancelled'?`id=eq.${id}&buyer_id=eq.${auth.id}`:`id=eq.${id}&seller_id=eq.${auth.id}`;
+   const filter=status==='cancelled'?`id=eq.${id}&buyer_id=eq.${auth.id}&status=eq.pending`:status==='completed'?`id=eq.${id}&buyer_id=eq.${auth.id}&status=eq.accepted`:`id=eq.${id}&seller_id=eq.${auth.id}&status=eq.pending`;
    const out=await rows(`/reservations?${filter}`,{method:'PATCH',headers:jsonHeaders,body:JSON.stringify({status,updated_at:new Date().toISOString()})});if(!out.length)return res.status(403).json({ok:false,message:'Рұқсат жоқ'});return res.json({ok:true,reservation:out[0]});
   }
   if(req.method==='PATCH'&&mode==='friend_status'){
@@ -128,5 +130,5 @@ module.exports=async(req,res)=>{
    const out=await rows(`/users?auth_user_id=eq.${seller_id}`,{method:'PATCH',headers:jsonHeaders,body:JSON.stringify({verified:Boolean(req.body?.verified)})});return res.json({ok:true,profile:out[0]});
   }
   return res.status(405).json({ok:false,message:'Әрекет қолдау таппайды'});
- }catch(e){console.error('community',e.message);return res.status(500).json({ok:false,message:'Серверде қате'});}
+ }catch(e){console.error('community',e.message);if(e.status===409)return res.status(409).json({ok:false,message:'Бұл әрекет бұрын орындалған'});return res.status(500).json({ok:false,message:'Серверде қате'});}
 };
